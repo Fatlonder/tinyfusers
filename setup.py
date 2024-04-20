@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from setuptools import setup
+from setuptools import setup, find_packages
 
 directory = Path(__file__).resolve().parent
 with open(directory / 'README.md', encoding='utf-8') as f:
@@ -22,4 +22,7 @@ setup(name='tinyfusers',
                         "pyobjc-framework-Metal; platform_system=='Darwin'",
                         "pyobjc-framework-libdispatch; platform_system=='Darwin'"],
       python_requires='>=3.8',
+      packages = ['tinyfusers', 'tinyfusers.attention', 'tinyfusers.ff', 'tinyfusers.tokenizer',
+                  'tinyfusers.vae', 'tinyfusers.variants', 'tinyfusers.vision'],
+ 
       include_package_data=True)
