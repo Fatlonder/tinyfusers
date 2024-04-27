@@ -1,6 +1,6 @@
 # Diffusion based models built around tinygrad (for now).
 The code for stable diffusion is mainly copied from tinygrad's sd example.  
-Compared to diffusers library this example takes lot more. 
+Compared to diffusers library this example takes lot more time. 
 The goal is to make tinyfusers faster but also usable.  
 
 You need to install `nvidia-cudnn-cu12` and `cudnn-frontend` since kernels rely on them.  
