@@ -50,3 +50,4 @@ def test_conv_vs_tinygrad():
 
 if __name__ =="__main__":
     test_conv_fp16()
+    test_conv_vs_tinygrad()
