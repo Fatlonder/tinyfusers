@@ -13,8 +13,8 @@ def test_conv_fp16():
     N, C, H, W = 1, 1, 3, 3
     K, R, S = 1, 2, 2
     padding, stride, dilation = [0,0], [1,1], [1,1]
-    #X = cp.random.randn(N, C, H, W)
-    #W = cp.random.randn(K, C, R, S)
+    #X = cp.random.randn(N, C, H, W).astype(cp.float16)
+    #W = cp.random.randn(K, C, R, S).astype(cp.float16)
     X = torch.randn((N, C, H, W), device="cuda", dtype=torch.float16)
     W = torch.randn((K, C, R, S), device="cuda", dtype=torch.float16)
     Y_cp = Conv2d(X, W, padding, stride, dilation)
@@ -40,13 +40,13 @@ def test_conv_vs_tinygrad():
     t_output = tinygrad_m(t_input)
     t_output = t_output.numpy()
     print(f"{monotonic()-start_time}\n\n")
-    print(f"{input.shape}, {t_output.shape}\n\n{t_output}")
 
     start_time = monotonic()
     output = tinyfusers_m(input)
     output = cp.asnumpy(output)
     print(f"{monotonic()-start_time}\n\n")
-    print(f"{input.shape}, {output.shape}\n\n{output}")
+
+    np.testing.assert_allclose(t_output.astype(np.float16), output, atol=1e-2, rtol=1e-2)
 
 if __name__ =="__main__":
     test_conv_fp16()
