@@ -18,7 +18,7 @@ setup(name='tinyfusers',
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License"
       ],
-      install_requires=["tinygrad", "tqdm", "nvidia-cudnn-cu12", "cupy",
+      install_requires=["tinygrad", "tqdm",
                         "pyobjc-framework-Metal; platform_system=='Darwin'",
                         "pyobjc-framework-libdispatch; platform_system=='Darwin'"],
       python_requires='>=3.8',
