@@ -38,4 +38,4 @@ def test_layernorm(param_extract):
     torch.testing.assert_close(Y_expected, Y_actual, atol=atol, rtol=rtol)
 
 if __name__ == "__main__":
-    test_layernorm((1600, torch.bfloat16))
+    test_layernorm((1600, torch.bfloat16))#float32

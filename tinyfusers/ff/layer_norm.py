@@ -19,8 +19,8 @@ def layer_norm(x_gpu, scale_gpu, bias_gpu, epsilon_cpu):
                         epsilon = epsilon)
     Y.set_output(True).set_data_type(x_gpu.dtype)
     graph.build([cudnn.heur_mode.A, cudnn.heur_mode.FALLBACK])
-    Y_actual = cp.empty_like(x_gpu.get_dim())
-    workspace = cp.empty(graph.get_workspace_size(), device="cuda", dtype=cp.uint8)
+    Y_actual = cp.empty(X.get_dim(), dtype=cp.float32)
+    workspace = cp.empty(graph.get_workspace_size(), dtype=cp.uint8)
     graph.execute({X : x_gpu, scale : scale_gpu, bias : bias_gpu , epsilon: epsilon_cpu , Y : Y_actual}, workspace, handle=handle)
     return Y_actual
 
