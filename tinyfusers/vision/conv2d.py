@@ -17,7 +17,7 @@ def conv_2d(X_gpu, W_gpu, padding, stride, dilation):
     graph.build([cudnn.heur_mode.A])
     Y_actual = cp.zeros(Y.get_dim(), dtype=cp.float16)
     workspace = cp.empty(graph.get_workspace_size(), dtype=cp.uint8)
-    graph.execute({X: X_gpu, W: W_gpu, Y: Y_actual}, workspace, handle= handle)
+    graph.execute({X: X_gpu, W: W_gpu, Y: Y_actual}, workspace, handle=handle)
     return Y_actual
 
 class Conv2d:

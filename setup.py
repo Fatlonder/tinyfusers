@@ -18,7 +18,7 @@ setup(name='tinyfusers',
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License"
       ],
-      install_requires=["tinygrad", "tqdm",
+      install_requires=["tinygrad", "tqdm", "looseversion","pytest",
                         "pyobjc-framework-Metal; platform_system=='Darwin'",
                         "pyobjc-framework-libdispatch; platform_system=='Darwin'"],
       python_requires='>=3.8',
