@@ -1,8 +1,8 @@
+from .conv2d import Conv2d as Cv2D
 from ..attention.attention import SpatialTransformer
 from ..vision.resnet import ResBlock
 from tinygrad.nn import Conv2d, GroupNorm, Linear
 from tinygrad import Tensor, dtypes
-from tinygrad.nn import Conv2d, Linear, GroupNorm
 import math
 
 class UNetModel:
@@ -13,7 +13,7 @@ class UNetModel:
       Linear(1280, 1280),
     ]
     self.input_blocks = [
-      [Conv2d(4, 320, kernel_size=3, padding=1)],
+      [Conv2d(4, 320, kernel_size=[3,3], padding=[1,1])],
       [ResBlock(320, 1280, 320), SpatialTransformer(320, 768, 8, 40)],
       [ResBlock(320, 1280, 320), SpatialTransformer(320, 768, 8, 40)],
       [Downsample(320)],
