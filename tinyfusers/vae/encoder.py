@@ -2,7 +2,7 @@ from ..vision.resnet import ResnetBlock
 from ..attention.attention import CLIPAttention
 from ..ff.nn import CLIPMLP
 from .mid import Mid
-from tinygrad.nn import Conv2d, Linear, GroupNorm, LayerNorm, Embedding
+from tinygrad.nn import Conv2d, GroupNorm, LayerNorm, Embedding
 from tinygrad import Tensor
 
 class Encoder:

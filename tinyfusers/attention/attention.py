@@ -1,5 +1,4 @@
 from ..ff.nn import FeedForward
-from tinygrad.nn import Conv2d, GroupNorm, Linear
 from tinygrad import Tensor
 from tinygrad.nn import Conv2d, Linear, GroupNorm, LayerNorm
 

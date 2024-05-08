@@ -1,11 +1,13 @@
 import cudnn
 import cupy as cp
+import numpy as np
 from typing import Union, Tuple
 from tinygrad.tensor import Tensor
 
 handle = cudnn.create_handle()
 
 def layer_norm(x_gpu, scale_gpu, bias_gpu, epsilon_cpu):
+    N = x_gpu.shape[0]
     graph = cudnn.pygraph(intermediate_data_type = cudnn.data_type.FLOAT, compute_data_type = cudnn.data_type.FLOAT)
     X = graph.tensor(name = "X", dim = x_gpu.size(), stride = x_gpu.stride(), data_type = x_gpu.dtype)
     scale = graph.tensor(name = "scale", dim = scale_gpu.size(), stride = scale_gpu.stride(), data_type = scale_gpu.dtype)
@@ -22,7 +24,8 @@ def layer_norm(x_gpu, scale_gpu, bias_gpu, epsilon_cpu):
     Y_actual = cp.empty(X.get_dim(), dtype=cp.float32)
     workspace = cp.empty(graph.get_workspace_size(), dtype=cp.uint8)
     graph.execute({X : x_gpu, scale : scale_gpu, bias : bias_gpu , epsilon: epsilon_cpu , Y : Y_actual}, workspace, handle=handle)
-    return Y_actual
+    np_actual = np.transpose(cp.asnumpy(Y_actual).flatten().reshape(N, -1, Y.get_dim()[1]), (0, 2, 1)).reshape(Y.get_dim())
+    return np_actual
 
 
 class LayerNorm:
