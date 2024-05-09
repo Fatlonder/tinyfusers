@@ -13,7 +13,7 @@ def linear(X_gpu, W_gpu, B_gpu):
     B = graph.tensor(name="B", dim=B_gpu.size(), stride=B_gpu.stride(), data_type=B_gpu.dtype,)
     response = graph.matmul(name="matmul", A=X, B=W)
     Y = graph.bias(name="bias", input=response, bias=B)
-    Y.set_output(True).set_data_type(dtype=cp.float32)
+    Y.set_output(True).set_data_type(cudnn.data_type.HALF)
     graph.execute([cudnn.heur_mode.A, cudnn.heur_mode.FALLBACK])
 
     workspace = cp.empty(graph.get_workspace_size(), dtype=cp.uint8)
