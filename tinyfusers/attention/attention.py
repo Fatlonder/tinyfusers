@@ -16,7 +16,7 @@ class AttnBlock:
     h_ = self.norm(x)
     q,k,v = self.q(h_), self.k(h_), self.v(h_)
 
-    # compute attention
+    # compute attention. Use cudnn operator instead.
     b,c,h,w = q.shape
     q,k,v = [x.reshape(b,c,h*w).transpose(1,2) for x in (q,k,v)]
     h_ = Tensor.scaled_dot_product_attention(q,k,v).transpose(1,2).reshape(b,c,h,w)

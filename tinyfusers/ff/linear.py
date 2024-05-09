@@ -4,7 +4,7 @@ import math
 from tinygrad.tensor import Tensor
 
 handle = cudnn.create_handle()
-
+#Use cupy to do gemm. It uses cuBLAS.
 def linear(X_gpu, W_gpu, B_gpu):    
     graph = cudnn.pygraph(intermediate_data_type=cudnn.data_type.FLOAT, compute_data_type=cudnn.data_type.FLOAT,handle=handle,)
     M, K = X_gpu.shape[1], W_gpu.shape[2]
