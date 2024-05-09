@@ -14,8 +14,7 @@ def linear(X_gpu, W_gpu, B_gpu):
     response = graph.matmul(name="matmul", A=X, B=W)
     Y = graph.bias(name="bias", input=response, bias=B)
     Y.set_output(True).set_data_type(cudnn.data_type.HALF)
-    graph.execute([cudnn.heur_mode.A, cudnn.heur_mode.FALLBACK])
-
+    graph.build([cudnn.heur_mode.A, cudnn.heur_mode.FALLBACK])
     workspace = cp.empty(graph.get_workspace_size(), dtype=cp.uint8)
     Y_actual = cp.empty((M, K), dtype=cp.float16)
     graph.execute({X: X_gpu, W: W_gpu, B: B_gpu, Y: Y_actual}, workspace, handle=handle)
