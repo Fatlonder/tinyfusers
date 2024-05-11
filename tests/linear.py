@@ -3,6 +3,10 @@ import pytest
 import torch
 import cupy as cp
 import itertools
+import torch
+from tinygrad import Tensor
+from time import monotonic
+from tinyfusers.ff.linear import linear
 from looseversion import LooseVersion
 from tinyfusers.ff.linear import linear
 
@@ -33,5 +37,49 @@ def test_linear(param_extract):
 
     torch.testing.assert_close(Y_expected[0], torch.from_numpy(cp.asnumpy(Y_actual)).to("cuda"), atol=atol, rtol=rtol)
 
+def test_speedup(B, M, N, K, i_dtype):
+    mat1 = torch.randn(B, M, K, requires_grad=False, device="cuda", dtype=i_dtype)
+    mat2 = torch.randn(1, K, N, requires_grad=False, device="cuda", dtype=i_dtype)
+    bias1 = torch.randn(1, 1, N, requires_grad=False, device="cuda", dtype=i_dtype)
+
+    npmat1 = mat1.squeeze().cpu().numpy()
+    npmat2 = mat2.squeeze().cpu().numpy()
+    npbias1 = bias1.squeeze().cpu().numpy()
+
+    tmat1 = Tensor(npmat1, device="cuda")
+    tmat2 = Tensor(npmat2, device="cuda")
+    tbias1 = Tensor(npbias1, device="cuda")
+
+    cpmat1 = cp.asarray(npmat1)
+    cpmat2 = cp.asarray(npmat2)
+    cpbias1 = cp.asarray(npbias1)
+
+    start_time = monotonic()
+    tmat3 = (tmat1 @ tmat2 + tbias1).numpy() 
+    print(f"Tinygrad: {monotonic()-start_time}")
+
+    start_time = monotonic()
+    mat3 = torch.matmul(mat1.squeeze(), mat2.squeeze()) + bias1.squeeze()
+    print(f"Torch: {monotonic()-start_time}")
+
+    start_time = monotonic()
+    fmat3 = torch.nn.functional.linear(mat1.squeeze(), mat2.squeeze().T, bias=bias1.squeeze())
+    print(f"Torch F: {monotonic()-start_time}")
+
+    start_time = monotonic()
+    cmat3 = cp.dot(cpmat1, cpmat2) + cpbias1
+    print(f"CuPy: {monotonic()-start_time}")
+
+    start_time = monotonic()
+    tfmat3 = linear(mat1, mat2, bias1)
+    print(f"CUDNN: {monotonic()-start_time}")
+
+    torch.testing.assert_close(mat3, torch.from_numpy(tmat3).to("cuda"), atol=1e-2, rtol=1e-2)
+    torch.testing.assert_close(mat3, torch.from_numpy(cp.asnumpy(cmat3)).to("cuda"), atol=1e-2, rtol=1e-2)
+    torch.testing.assert_close(mat3, fmat3, atol=1e-2, rtol=1e-2)
+    torch.testing.assert_close(mat3, torch.from_numpy(cp.asnumpy(tfmat3)).to("cuda"), atol=1e-2, rtol=1e-2)
+
 if __name__ == "__main__":
+    B, M, N, K, i_dtype = 1, 10000, 20000, 1000, torch.float16
     test_linear((768, torch.float16))
+    test_speedup(B, M, N, K, i_dtype)
