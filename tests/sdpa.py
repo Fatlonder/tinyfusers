@@ -19,9 +19,9 @@ scale = cp.single(1.0 / math.sqrt(HS))
 N = T
 dims = (B, NH, T, HS)
 input_type = torch.float32
-
-loaded_from_source = os.path.join(os.path.dirname("../native/cuda/"), 'softmax.cu')
-options=('--use_fast_math', '-lcublas -lcublasLt', '-D__CUDA_NO_HALF_CONVERSIONS__', '-I/../native/cuda/')
+cuda_dir = os.path.abspath('tinyfusers/native/cuda/')
+loaded_from_source = os.path.join(cuda_dir, 'softmax.cu')
+options=('--use_fast_math', '-lcublas -lcublasLt', '-D__CUDA_NO_HALF_CONVERSIONS__', f"-I{cuda_dir}")
 
 with open(loaded_from_source, 'r') as f:
     code = f.read()

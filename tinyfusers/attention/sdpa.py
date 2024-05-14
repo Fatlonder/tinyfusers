@@ -11,12 +11,13 @@ HS = int(C / NH) # embedding dimension per head
 scale = cp.single(1.0 / math.sqrt(HS))
 N = T
 input_type = cp.float32
-loaded_from_source = os.path.join(os.path.dirname("../../native/cuda/"), 'softmax.cu')
+cuda_dir = os.path.abspath('tinyfusers/native/cuda/')
+loaded_from_source = os.path.join(cuda_dir, 'softmax.cu')
 def read_code(code_filename):
     with open(code_filename, 'r') as f:
         code = f.read()
     return code
-options=('--use_fast_math', '-lcublas -lcublasLt', '-D__CUDA_NO_HALF_CONVERSIONS__', '-I/../../native/cuda/')
+options=('--use_fast_math', '-lcublas -lcublasLt', '-D__CUDA_NO_HALF_CONVERSIONS__', f"-I{cuda_dir}")
 module = cp.RawModule(code=read_code(loaded_from_source), backend='nvcc', options=options) 
 scale_kernel = module.get_function('scale_kernel')
 softmax_forward_kernel = module.get_function('softmax_forward_kernel')
@@ -66,7 +67,7 @@ def scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
     preatt = cp.zeros((B, NH, T, T), dtype=input_type)
 
     preatt =  cp.matmul(q_gpu, cp.transpose(k_gpu, axes=(0,1,3,2)))
-    scale_kernel((N,), (N,), (preatt, scale, B, NH, T))
+    #scale_kernel((N,), (N,), (preatt, scale, B, NH, T))
     softmax_forward_kernel(grid=(grid_size,), block=(softmax_block_size,), 
                            args=(att, preatt, B * NH * T, T), shared_mem=shared_mem_size)
     o = cp.matmul(cp.reshape(att, (B, NH, T, T)), v_gpu)
