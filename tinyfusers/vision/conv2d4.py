@@ -39,8 +39,9 @@ class Conv2d:
     self.bias = Tensor.uniform(out_channels, low=-bound, high=bound) if bias else None
   def __call__(self, x:Tensor):
       ddout = conv_2d(x, self.weight, padding=self.padding, stride=self.stride, dilation=self.dilation, bias=self.bias)
-      #ttout = x.conv2d(self.weight, self.bias, padding=self.padding, stride=self.stride, dilation=self.dilation, groups=self.groups)
+      ttout = x.conv2d(self.weight, self.bias, padding=self.padding, stride=self.stride, dilation=self.dilation, groups=self.groups)
       #print(f"\nCompare: {np.allclose(ddout.numpy(), ttout.numpy(), atol=1e-4, rtol=1e-4)}")
+      np.testing.assert_allclose(ddout.numpy(), ttout.numpy(), atol=1e-2, rtol=1e-2)
       return ddout
   def initialize_weight(self, out_channels, in_channels, groups):
     return Tensor.kaiming_uniform(out_channels, in_channels//groups, *self.kernel_size, a=math.sqrt(5))

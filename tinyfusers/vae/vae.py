@@ -1,13 +1,14 @@
 from .encoder import Encoder
 from .decoder import Decoder
-from tinygrad.nn import Conv2d
+from ..vision.conv2d4 import Conv2d
+
 
 class AutoencoderKL:
   def __init__(self):
     self.encoder = Encoder()
     self.decoder = Decoder()
-    self.quant_conv = Conv2d(8, 8, 1)
-    self.post_quant_conv = Conv2d(4, 4, 1)
+    self.quant_conv = Conv2d(8, 8, kernel_size=[1,1])
+    self.post_quant_conv = Conv2d(4, 4, kernel_size=[1,1])
 
   def __call__(self, x):
     latent = self.encoder(x)

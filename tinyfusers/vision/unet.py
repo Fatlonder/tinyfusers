@@ -1,7 +1,7 @@
-from .conv2d import Conv2d as Cv2D
+from .conv2d4 import Conv2d
 from ..attention.attention import SpatialTransformer
 from ..vision.resnet import ResBlock
-from tinygrad.nn import Conv2d, GroupNorm, Linear
+from tinygrad.nn import GroupNorm, Linear
 from tinygrad import Tensor, dtypes
 import math
 
@@ -48,7 +48,7 @@ class UNetModel:
     self.out = [
       GroupNorm(32, 320),
       Tensor.silu,
-      Conv2d(320, 4, kernel_size=3, padding=1)
+      Conv2d(320, 4, kernel_size=[3,3], padding=[1,1])
     ]
 
   def __call__(self, x, timesteps=None, context=None):
@@ -79,7 +79,7 @@ class UNetModel:
   
 class Upsample:
   def __init__(self, channels):
-    self.conv = Conv2d(channels, channels, 3, padding=1)
+    self.conv = Conv2d(channels, channels, kernel_size=[3,3], padding=[1,1])
 
   def __call__(self, x):
     bs,c,py,px = x.shape
@@ -88,7 +88,7 @@ class Upsample:
 
 class Downsample:
   def __init__(self, channels):
-    self.op = Conv2d(channels, channels, 3, stride=2, padding=1)
+    self.op = Conv2d(channels, channels, stride=[2,2], kernel_size=[3,3], padding=[1,1])
 
   def __call__(self, x):
     return self.op(x)
