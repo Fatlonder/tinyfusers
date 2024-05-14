@@ -1,4 +1,4 @@
-# Diffusion based models built around tinygrad (for now).
+# Tinyfusers is inference engine for diffusion based models.
 The code for stable diffusion is mainly copied from tinygrad's sd example.  
 Compared to diffusers library this example takes lot more time. 
 The goal is to make tinyfusers faster but also usable.  
