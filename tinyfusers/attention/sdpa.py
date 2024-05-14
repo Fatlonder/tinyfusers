@@ -66,7 +66,7 @@ def scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
     att = cp.zeros((B * NH * T, T), dtype=input_type)
     preatt = cp.zeros((B, NH, T, T), dtype=input_type)
 
-    preatt =  cp.matmul(q_gpu, cp.transpose(k_gpu, axes=(0,1,3,2)))
+    preatt =  scale * cp.matmul(q_gpu, cp.transpose(k_gpu, axes=(0,1,3,2)))
     #scale_kernel((N,), (N,), (preatt, scale, B, NH, T))
     softmax_forward_kernel(grid=(grid_size,), block=(softmax_block_size,), 
                            args=(att, preatt, B * NH * T, T), shared_mem=shared_mem_size)
