@@ -10,6 +10,7 @@ from tinyfusers.ff.linear import linear
 from looseversion import LooseVersion
 from tinyfusers.ff.linear import linear
 
+B, M, N, K, i_dtype = 1, 10000, 20000, 1000, torch.float16
 embedding_dim_options = [768, 1024, 1280, 1600]
 input_type_options = [torch.bfloat16, torch.float16]
 
@@ -80,6 +81,5 @@ def test_speedup(B, M, N, K, i_dtype):
     torch.testing.assert_close(mat3, torch.from_numpy(cp.asnumpy(tfmat3)).to("cuda"), atol=1e-2, rtol=1e-2)
 
 if __name__ == "__main__":
-    B, M, N, K, i_dtype = 1, 10000, 20000, 1000, torch.float16
     test_linear((768, torch.float16))
     test_speedup(B, M, N, K, i_dtype)
