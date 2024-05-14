@@ -9,7 +9,7 @@ with open(directory / 'README.md', encoding='utf-8') as f:
 
 setup(name='tinyfusers',
       version='0.1.0',
-      description='Diffusion based models built around tinygrad.',
+      description='Inference engine for Diffusion models.',
       author='Fatlonder Cakolli',
       license='MIT',
       long_description=long_description,
