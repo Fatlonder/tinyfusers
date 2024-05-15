@@ -1,11 +1,13 @@
 import cudnn
 import pytest
 import torch
+import cupy as cp
 from torch import nn
 import itertools
 from looseversion import LooseVersion
 from tinyfusers.ff.group_norm import group_norm
-import cupy as cp
+from tinyfusers.ff.group_norm import GroupNorm
+from tinygrad import Tensor
 
 embedding_dim_options = [768, 1024, 1280, 1600]
 input_type_options = [torch.bfloat16, torch.float16]
@@ -28,12 +30,15 @@ def test_groupnorm(param_extract):
     N,C,H,W = batch_size * seq_size, embedding_dim, 2, 2
     num_groups = 2
     x_gpu = torch.randn(N, C, H, W, requires_grad=False, device="cuda", dtype=input_type).to(memory_format=torch.channels_last)
-    m = nn.GroupNorm(num_groups, C, device="cuda")
-    output_v = group_norm(x_gpu, num_groups, m.eps)
-    output = m(x_gpu)
+    group_norm_pt = nn.GroupNorm(num_groups, C, device="cuda")
+    group_norm_tf = GroupNorm(num_groups, C, group_norm_pt.eps)
 
-    torch.testing.assert_close(output, torch.from_numpy(cp.asnumpy(output_v)).to("cuda"), atol=atol, rtol=rtol)
-    print(f"{output}\n\n{output_v}")
+    o_tff = group_norm(Tensor(x_gpu.cpu().numpy(), device="cuda"), num_groups, group_norm_pt.eps)
+    o_tf = group_norm_tf(Tensor(x_gpu.cpu().numpy(), device="cuda"))
+    o_pt = group_norm_pt(x_gpu)
+
+    torch.testing.assert_close(o_pt, torch.from_numpy(cp.asnumpy(o_tff)).to("cuda"), atol=atol, rtol=rtol)
+    print(f"{o_pt}\n\n{o_tf}")
 
 if __name__ == "__main__":
     test_groupnorm((1600, torch.float32))

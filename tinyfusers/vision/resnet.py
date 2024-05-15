@@ -1,6 +1,7 @@
 from tinygrad.nn import GroupNorm, Linear
 from tinygrad import Tensor
 from .conv2d4 import Conv2d
+from tinyfusers.ff.group_norm import GroupNorm
 
 
 class ResBlock:
