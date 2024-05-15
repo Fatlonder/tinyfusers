@@ -1,11 +1,13 @@
 from ..vision.resnet import ResnetBlock
 from .mid import Mid
-from tinygrad.nn import Conv2d, GroupNorm
+from tinygrad.nn import GroupNorm
+from ..vision.conv2d4 import Conv2d
+
 
 class Decoder:
   def __init__(self):
     sz = [(128, 256), (256, 512), (512, 512), (512, 512)]
-    self.conv_in = Conv2d(4,512,3, padding=1)
+    self.conv_in = Conv2d(4,512, kernel_size=[3,3], padding=[1,1])
     self.mid = Mid(512)
 
     arr = []
@@ -14,11 +16,11 @@ class Decoder:
         [ResnetBlock(s[1], s[0]),
          ResnetBlock(s[0], s[0]),
          ResnetBlock(s[0], s[0])]})
-      if i != 0: arr[-1]['upsample'] = {"conv": Conv2d(s[0], s[0], 3, padding=1)}
+      if i != 0: arr[-1]['upsample'] = {"conv": Conv2d(s[0], s[0], kernel_size=[3,3], padding=[1,1])}
     self.up = arr
 
     self.norm_out = GroupNorm(32, 128)
-    self.conv_out = Conv2d(128, 3, 3, padding=1)
+    self.conv_out = Conv2d(128, 3, kernel_size=[3,3], padding=[1,1])
 
   def __call__(self, x):
     x = self.conv_in(x)

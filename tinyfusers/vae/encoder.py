@@ -2,25 +2,27 @@ from ..vision.resnet import ResnetBlock
 from ..attention.attention import CLIPAttention
 from ..ff.nn import CLIPMLP
 from .mid import Mid
-from tinygrad.nn import Conv2d, GroupNorm, LayerNorm, Embedding
+from tinygrad.nn import GroupNorm, LayerNorm, Embedding
 from tinygrad import Tensor
+from ..vision.conv2d4 import Conv2d
+
 
 class Encoder:
   def __init__(self):
     sz = [(128, 128), (128, 256), (256, 512), (512, 512)]
-    self.conv_in = Conv2d(3, 128, 3, padding=1)
+    self.conv_in = Conv2d(3, 128, kernel_size=[3,3], padding=[1,1])
 
     arr = []
     for i,s in enumerate(sz):
       arr.append({"block":
         [ResnetBlock(s[0], s[1]),
          ResnetBlock(s[1], s[1])]})
-      if i != 3: arr[-1]['downsample'] = {"conv": Conv2d(s[1], s[1], 3, stride=2, padding=(0,1,0,1))}
+      if i != 3: arr[-1]['downsample'] = {"conv": Conv2d(s[1], s[1], kernel_size=[3,3], stride=[2,2], padding=[0,1,0,1])}
     self.down = arr
 
     self.mid = Mid(512)
     self.norm_out = GroupNorm(32, 512)
-    self.conv_out = Conv2d(512, 8, 3, padding=1)
+    self.conv_out = Conv2d(512, 8, kernel_size=[3,3], padding=[1,1])
 
   def __call__(self, x):
     x = self.conv_in(x)
