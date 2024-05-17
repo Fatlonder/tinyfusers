@@ -5,7 +5,8 @@ import numpy as np
 
 def group_norm(x:Tensor, num_groups, eps):
     N, C, H, W = x.shape
-    x_cupy = cp.asarray(x.numpy()).reshape(x_cupy, (N, num_groups, -1))
+    x_cupy = cp.reshape(cp.asarray(x.numpy()), (N, num_groups, -1))
+    cp.cuda.runtime.deviceSynchronize()
     mean = cp.mean(x_cupy, axis=-1, keepdims=True) #Calculate using Welford's Algorithm, on kernel model.  
     y_n = x_cupy-mean
     y_var = cp.sqrt(cp.mean(cp.square(y_n), axis=-1, keepdims=True) + eps)

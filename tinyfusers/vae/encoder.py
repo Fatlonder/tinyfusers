@@ -1,11 +1,11 @@
 from ..vision.resnet import ResnetBlock
 from ..attention.attention import CLIPAttention
 from ..ff.nn import CLIPMLP
-from .mid import Mid
-from tinygrad.nn import GroupNorm, LayerNorm, Embedding
-from tinygrad import Tensor
 from ..vision.conv2d4 import Conv2d
-
+from ..ff.layer_norm import LayerNorm
+from .mid import Mid
+from tinygrad.nn import GroupNorm, Embedding
+from tinygrad import Tensor
 
 class Encoder:
   def __init__(self):
