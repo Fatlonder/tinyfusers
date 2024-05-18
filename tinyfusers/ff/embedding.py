@@ -1,4 +1,5 @@
 import cupy as cp
+from tinygrad import Tensor
 
 class Embedding:
     def __init__(self, vocab_size: int, embed_size: int):
@@ -18,4 +19,4 @@ class Embedding:
         idx = cp.broadcast_to(idx, big_shp)
         vals = self.weight.reshape(weight_shp)
         vals = cp.broadcast_to(vals, big_shp)
-        return cp.sum(cp.multiply(cp.equal(arange, idx), vals), axis=2)
+        return Tensor(cp.asnumpy(cp.sum(cp.multiply(cp.equal(arange, idx), vals), axis=2)), device="cuda")
