@@ -15,7 +15,6 @@ def conv_2d(X_gpu, W_gpu, padding, stride, dilation, bias):
                           compute_data_type = cudnn.data_type.FLOAT)
     HW = W_gpu.shape[2:]
     N, K  = X_gpu.shape[0], W_gpu.shape[0]
-    #print(f"\n{HW}, {padding}, {stride}, {dilation}\n{bias.shape}, {bias.reshape(1, -1, *[1] * len(HW))}")
     X_gpu = cp.asarray(X_gpu.numpy())
     W_gpu = cp.asarray(W_gpu.numpy())
     X = graph.tensor_like(X_gpu)
@@ -40,7 +39,6 @@ class Conv2d:
   def __call__(self, x:Tensor):
       ddout = conv_2d(x, self.weight, padding=self.padding, stride=self.stride, dilation=self.dilation, bias=self.bias)
       ttout = x.conv2d(self.weight, self.bias, padding=self.padding, stride=self.stride, dilation=self.dilation, groups=self.groups)
-      #print(f"\nCompare: {np.allclose(ddout.numpy(), ttout.numpy(), atol=1e-4, rtol=1e-4)}")
       np.testing.assert_allclose(ddout.numpy(), ttout.numpy(), atol=1e-2, rtol=1e-2)
       return ddout
   def initialize_weight(self, out_channels, in_channels, groups):

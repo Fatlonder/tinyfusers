@@ -39,8 +39,9 @@ def layer_norm(x_gpu, scale_gpu, bias_gpu, epsilon_cpu):
 class LayerNorm:
   def __init__(self, normalized_shape:Union[int, Tuple[int, ...]], eps:float=1e-5, elementwise_affine:bool=True):
     self.normalized_shape = (normalized_shape,) if isinstance(normalized_shape, int) else tuple(normalized_shape)
-    self.axis, self.eps, self.elementwise_affine = tuple(-1-i for i in range(len(self.normalized_shape))), eps, elementwise_affine
+    self.axis, self.elementwise_affine = tuple(-1-i for i in range(len(self.normalized_shape))), elementwise_affine
     self.weight, self.bias = (Tensor.ones(*self.normalized_shape), Tensor.zeros(*self.normalized_shape)) if elementwise_affine else (None, None)
+    self.eps = Tensor.full((1, 1, 1, 1), eps, device="cpu")
 
   def __call__(self, x:Tensor):
     assert self.normalized_shape == x.shape[-len(self.normalized_shape):], f"last dimensions of {x.shape} must match {self.normalized_shape}"
