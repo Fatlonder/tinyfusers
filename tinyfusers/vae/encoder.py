@@ -1,12 +1,13 @@
-from tinygrad.nn import GroupNorm, Embedding
+from tinygrad.nn import GroupNorm
 from tinygrad import Tensor
-from ..vision.resnet import ResnetBlock
+from .mid import Mid
 from ..attention.attention import CLIPAttention
+from ..vision.resnet import ResnetBlock
+from ..vision.conv2d4 import Conv2d
 from ..ff.nn import CLIPMLP
 from ..ff.layer_norm import LayerNorm
-from ..vision.conv2d4 import Conv2d
 from ..ff.embedding import Embedding
-from .mid import Mid
+
 
 class Encoder:
   def __init__(self):
@@ -69,7 +70,6 @@ class CLIPTextEmbeddings:
   def __init__(self):
     self.token_embedding = Embedding(49408, 768)
     self.position_embedding = Embedding(77, 768)
-
   def __call__(self, input_ids, position_ids):
     return self.token_embedding(input_ids) + self.position_embedding(position_ids)
 

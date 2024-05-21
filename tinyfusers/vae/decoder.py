@@ -1,7 +1,7 @@
-from ..vision.resnet import ResnetBlock
-from .mid import Mid
-from ..vision.conv2d4 import Conv2d
 from tinygrad.nn import GroupNorm
+from ..vision.resnet import ResnetBlock
+from ..vision.conv2d4 import Conv2d
+from .mid import Mid
 
 class Decoder:
   def __init__(self):
