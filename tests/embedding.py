@@ -13,8 +13,9 @@ def test_embedding():
 
     idx = cp.array([[1, 2], [1, 2]])
     #idx = np.arange(n_dim, dtype=np.int16).reshape(1,n_dim)
-    embedded = embedding(idx)
-    embedded1 = embedding1(Tensor(cp.asnumpy(idx)))
+    t_idx = Tensor(cp.asnumpy(idx))
+    embedded = embedding(t_idx)
+    embedded1 = embedding1(t_idx)
     cp.testing.assert_allclose(embedded, embedded1.numpy(), atol=1e-2, rtol=1e-2)
 
 if __name__ == "__main__":
