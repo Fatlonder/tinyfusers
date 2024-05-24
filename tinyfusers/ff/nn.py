@@ -1,4 +1,4 @@
-from tinygrad.nn import  Linear
+from .linear import  Linear
 
 class GEGLU:
   def __init__(self, dim_in, dim_out):

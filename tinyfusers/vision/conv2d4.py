@@ -9,7 +9,7 @@ from tinygrad.helpers import prod
 handle = cudnn.create_handle()
 
 def conv_2d(X_gpu, W_gpu, padding, stride, dilation, bias):
-    graph = cudnn.pygraph(handle = handle, name = "cudnn_graph_conv2d", 
+    graph = cudnn.pygraph(handle = handle, name = "conv2d", 
                           io_data_type = cudnn.data_type.FLOAT, 
                           intermediate_data_type = cudnn.data_type.FLOAT, 
                           compute_data_type = cudnn.data_type.FLOAT)

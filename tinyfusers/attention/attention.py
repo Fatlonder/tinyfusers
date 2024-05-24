@@ -1,8 +1,7 @@
 from tinygrad import Tensor
-from tinygrad.nn import Conv2d, Linear, GroupNorm, LayerNorm
+from tinygrad.nn import Conv2d, GroupNorm, LayerNorm
 from ..ff.nn import FeedForward
-
-
+from ..ff.linear import Linear
 
 class AttnBlock:
   def __init__(self, in_channels):
