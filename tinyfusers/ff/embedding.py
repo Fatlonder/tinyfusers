@@ -40,17 +40,22 @@ class Embedding:
     def __init__(self, vocab_size: int, embed_size: int):
         self.vocab_sz = vocab_size
         self.embed_sz = embed_size
-        self.weight = cp.random.randn(vocab_size, embed_size, dtype=cp.float32) * cp.sqrt(2. / (vocab_size + embed_size), dtype=cp.float32)
+        # Will fix the weight loading and remove the next line.
+        #self.weight = cp.random.randn(vocab_size, embed_size, dtype=cp.float32) * cp.sqrt(2. / (vocab_size + embed_size), dtype=cp.float32)
+        self.weight = Tensor.glorot_uniform(vocab_size, embed_size)
     def __call__(self, idx: Tensor) -> Tensor:
         emb_tg = TEmbedding(self.vocab_sz, self.embed_sz)
-        emb_tg.weight = Tensor(cp.asnumpy(self.weight), device="cuda")
+        emb_tg.weight = self.weight
+        #emb_tg.weight = Tensor(cp.asnumpy(self.weight), device="cuda")
         o_tg = emb_tg(idx)
-        o_p1 = embedding(idx.numpy()[0][:35].reshape(1, 35), self.vocab_sz, self.embed_sz, self.weight)
-        o_p2 = embedding(idx.numpy()[0][35:].reshape(1, idx.shape[0]-35), self.vocab_sz, self.embed_sz, self.weight)
+        weight = cp.asarray(self.weight.numpy())
+        # Temporary, for memory constraints. 
+        o_p1 = embedding(idx.numpy()[0][:35].reshape(1, 35), self.vocab_sz, self.embed_sz, weight)
+        o_p2 = embedding(idx.numpy()[0][35:].reshape(1, idx.shape[0]-35), self.vocab_sz, self.embed_sz, weight)
         #o_tf = embedding(idx.numpy(), self.vocab_sz, self.embed_sz, self.weight)
         o_tf = np.concatenate((o_p1[0], o_p2[0]), axis=0)
         o_tf = np.expand_dims(o_tf, axis=0)
         np.testing.assert_allclose(o_tf, o_tg.numpy(), atol=1e-2, rtol=1e-2)
         tensor_tf = Tensor(o_tf)
-        cp.cuda.Device().synchronize()
+        #cp.cuda.Device().synchronize() # Is this really needed?
         return tensor_tf
