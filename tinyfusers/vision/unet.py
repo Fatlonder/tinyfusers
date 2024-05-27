@@ -1,10 +1,10 @@
 import math
-from tinygrad.nn import GroupNorm
 from tinygrad import Tensor, dtypes
 from .conv2d4 import Conv2d
 from ..attention.attention import SpatialTransformer
 from ..vision.resnet import ResBlock
 from ..ff.linear import Linear
+from ..ff.group_norm import GroupNorm
 
 class UNetModel:
   def __init__(self):

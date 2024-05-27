@@ -1,7 +1,8 @@
 from tinygrad import Tensor
-from tinygrad.nn import Conv2d, GroupNorm, LayerNorm
+from tinygrad.nn import Conv2d, LayerNorm
 from ..ff.nn import FeedForward
 from ..ff.linear import Linear
+from ..ff.group_norm import GroupNorm
 from .sdpa import scaled_dot_product_attention
 
 

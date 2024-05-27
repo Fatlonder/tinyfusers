@@ -1,7 +1,7 @@
-from tinygrad.nn import GroupNorm
 from tinygrad import Tensor
 from .conv2d4 import Conv2d
 from ..ff.linear import Linear
+from ..ff.group_norm import GroupNorm
 
 class ResBlock:
   def __init__(self, channels, emb_channels, out_channels):
