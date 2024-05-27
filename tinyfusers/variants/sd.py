@@ -1,9 +1,9 @@
-from ..vision.unet import UNetModel
-from ..vae.vae import AutoencoderKL
-from ..vae.encoder import CLIPTextTransformer
 from collections import namedtuple
 import numpy as np
 from tinygrad import Device, dtypes, Tensor
+from ..vision.unet import UNetModel
+from ..vae.vae import AutoencoderKL
+from ..vae.encoder import CLIPTextTransformer
 
 class StableDiffusion:
   def __init__(self):

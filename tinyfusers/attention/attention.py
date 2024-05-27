@@ -1,9 +1,10 @@
 from tinygrad import Tensor
-from tinygrad.nn import Conv2d, LayerNorm
+from .sdpa import scaled_dot_product_attention
 from ..ff.nn import FeedForward
 from ..ff.linear import Linear
 from ..ff.group_norm import GroupNorm
-from .sdpa import scaled_dot_product_attention
+from ..ff.layer_norm import LayerNorm
+from ..vision.conv2d4 import Conv2d
 
 
 class AttnBlock:
