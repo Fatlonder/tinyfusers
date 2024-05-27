@@ -2,6 +2,8 @@ from tinygrad import Tensor
 from tinygrad.nn import Conv2d, GroupNorm, LayerNorm
 from ..ff.nn import FeedForward
 from ..ff.linear import Linear
+from .sdpa import scaled_dot_product_attention
+
 
 class AttnBlock:
   def __init__(self, in_channels):
@@ -18,8 +20,11 @@ class AttnBlock:
 
     # compute attention. Use cudnn operator instead.
     b,c,h,w = q.shape
-    q,k,v = [x.reshape(b,c,h*w).transpose(1,2) for x in (q,k,v)]
-    h_ = Tensor.scaled_dot_product_attention(q,k,v).transpose(1,2).reshape(b,c,h,w)
+    print(f"call: {q.shape}, {k.shape}, {v.shape}\n\n")
+    #q,k,v = [x.reshape(b,c,h*w).transpose(1,2) for x in (q,k,v)]
+    print(f"call: {q.shape}, {k.shape}, {v.shape}\n\n")
+    #h_ = scaled_dot_product_attention(q,k,v).transpose(1,2).reshape(b,c,h,w)
+    h_ = scaled_dot_product_attention(q,k,v)
     return x + self.proj_out(h_)
   
 class CrossAttention:

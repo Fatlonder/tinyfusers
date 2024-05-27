@@ -14,7 +14,6 @@ def group_norm(x:Tensor, num_groups, eps):
     Y_tensor = Tensor(cp.asnumpy(x))
     return Y_tensor
   
-
 class GroupNorm:
   def __init__(self, num_groups:int, num_channels:int, eps:float=1e-5, affine:bool=True):
     self.num_groups, self.num_channels, self.eps = num_groups, num_channels, eps

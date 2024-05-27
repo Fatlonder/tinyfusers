@@ -2,14 +2,8 @@ import cudnn
 import math
 import cupy as cp
 import os
+from tinygrad import Tensor
 
-B = 35 # batch size
-T = 1024 # maximum sequence length
-C = 768
-NH = 12 # query number of heads
-HS = int(C / NH) # embedding dimension per head
-scale = cp.single(1.0 / math.sqrt(HS))
-N = T
 input_type = cp.float32
 cuda_dir = os.path.abspath('tinyfusers/native/cuda/')
 loaded_from_source = os.path.join(cuda_dir, 'softmax.cu')
@@ -24,8 +18,8 @@ softmax_forward_kernel = module.get_function('softmax_forward_kernel')
 
 def cudnn_scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
     b = 4    # batch size
-    h = 12   # query number of heads
     s = 1024 # maximum sequence length
+    h = 12   # query number of heads
     d = 64   # embedding dimension per head
     attn_scale = 1.0 / math.sqrt(d)
     dims = (b, h, s, d)
@@ -59,6 +53,11 @@ def cudnn_scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
     return o_gpu
 
 def scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
+    q_cp = cp.asarray(q_gpu.numpy())
+    k_cp = cp.asarray(k_gpu.numpy())
+    v_cp = cp.asarray(v_gpu.numpy())
+    B, NH, T, HS = q_gpu.shape
+    scale = cp.single(1.0 / math.sqrt(HS))
     softmax_block_size = 256
     grid_size = B * NH * T
     shared_mem_size = 2 * softmax_block_size / 32 * 4 #sizeof(float)
@@ -66,10 +65,12 @@ def scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
     att = cp.zeros((B * NH * T, T), dtype=input_type)
     preatt = cp.zeros((B, NH, T, T), dtype=input_type)
 
-    preatt =  scale * cp.matmul(q_gpu, cp.transpose(k_gpu, axes=(0,1,3,2)))
+    preatt =  scale * cp.matmul(q_cp, cp.transpose(k_cp, axes=(0,1,3,2)))
     #scale_kernel((N,), (N,), (preatt, scale, B, NH, T))
     softmax_forward_kernel(grid=(grid_size,), block=(softmax_block_size,), 
                            args=(att, preatt, B * NH * T, T), shared_mem=shared_mem_size)
-    o = cp.matmul(cp.reshape(att, (B, NH, T, T)), v_gpu)
-    return o
+    o = cp.matmul(cp.reshape(att, (B, NH, T, T)), v_cp)
+    o_np = cp.asnumpy(o)
+    o_tg = Tensor(o_np)
+    return o_tg
 
