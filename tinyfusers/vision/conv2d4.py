@@ -15,8 +15,8 @@ def conv_2d(X_gpu, W_gpu, padding, stride, dilation, bias):
                           compute_data_type = cudnn.data_type.FLOAT)
     HW = W_gpu.shape[2:]
     N, K  = X_gpu.shape[0], W_gpu.shape[0]
-    X_gpu = cp.asarray(X_gpu.numpy())
-    W_gpu = cp.asarray(W_gpu.numpy())
+    X_gpu = cp.asarray(X_gpu.numpy()).astype(cp.float32)
+    W_gpu = cp.asarray(W_gpu.numpy()).astype(cp.float32)
     X = graph.tensor_like(X_gpu)
     W = graph.tensor_like(W_gpu)
     Y = graph.conv_fprop(image = X, weight = W, padding = padding, stride = stride, dilation = dilation, compute_data_type = cudnn.data_type.FLOAT)

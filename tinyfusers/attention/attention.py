@@ -10,10 +10,10 @@ from ..vision.conv2d4 import Conv2d
 class AttnBlock:
   def __init__(self, in_channels):
     self.norm = GroupNorm(32, in_channels)
-    self.q = Conv2d(in_channels, in_channels, 1)
-    self.k = Conv2d(in_channels, in_channels, 1)
-    self.v = Conv2d(in_channels, in_channels, 1)
-    self.proj_out = Conv2d(in_channels, in_channels, 1)
+    self.q = Conv2d(in_channels, in_channels, kernel_size=[1,1])
+    self.k = Conv2d(in_channels, in_channels, kernel_size=[1,1])
+    self.v = Conv2d(in_channels, in_channels, kernel_size=[1,1])
+    self.proj_out = Conv2d(in_channels, in_channels, kernel_size=[1,1])
 
   # copied from AttnBlock in ldm repo
   def __call__(self, x):
@@ -65,9 +65,9 @@ class SpatialTransformer:
   def __init__(self, channels, context_dim, n_heads, d_head):
     self.norm = GroupNorm(32, channels)
     assert channels == n_heads * d_head
-    self.proj_in = Conv2d(channels, n_heads * d_head, 1)
+    self.proj_in = Conv2d(channels, n_heads * d_head, kernel_size=[1,1])
     self.transformer_blocks = [BasicTransformerBlock(channels, context_dim, n_heads, d_head)]
-    self.proj_out = Conv2d(n_heads * d_head, channels, 1)
+    self.proj_out = Conv2d(n_heads * d_head, channels, kernel_size=[1,1])
 
   def __call__(self, x, context=None):
     b, c, h, w = x.shape

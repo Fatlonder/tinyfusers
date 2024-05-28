@@ -25,12 +25,15 @@ class Linear:
   def __init__(self, in_features, out_features, bias=True):
     bound = 1 / math.sqrt(in_features)
     self.weight = Tensor.kaiming_uniform(out_features, in_features, a=math.sqrt(5))
-    self.bias = Tensor.uniform(out_features, low=-bound, high=bound) if bias else None
+    self.bias = Tensor.uniform(out_features, low=-bound, high=bound) if bias else Tensor(0)
   def __call__(self, x:Tensor):
     o_tg = x.linear(self.weight.transpose(), self.bias)
+    cur_stream = cp.cuda.get_current_stream()
+    cur_stream.use()
     x_cp = cp.asarray(x.numpy())
     weight = cp.asarray(self.weight.transpose().numpy())
-    bias = cp.asarray(self.bias.numpy()) if self.bias else 0
+    bias = cp.asarray(self.bias.numpy())
+    cur_stream.synchronize()
     cp.cuda.Device().synchronize()
     o_tf = cp.dot(x_cp, weight) + bias 
     np.testing.assert_allclose(cp.asnumpy(o_tf), o_tg.numpy(), atol=1e-2, rtol=1e-2)
