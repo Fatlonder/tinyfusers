@@ -1,10 +1,12 @@
+import numpy as np
 from tinygrad import Tensor
 from .sdpa import scaled_dot_product_attention
 from ..ff.nn import FeedForward
 from ..ff.linear import Linear
-from ..ff.group_norm import GroupNorm
+#from ..ff.group_norm import GroupNorm
 from ..ff.layer_norm import LayerNorm
 from ..vision.conv2d4 import Conv2d
+from tinygrad.nn import GroupNorm
 
 
 class AttnBlock:
@@ -20,14 +22,13 @@ class AttnBlock:
     h_ = self.norm(x)
     q,k,v = self.q(h_), self.k(h_), self.v(h_)
 
-    # compute attention. Use cudnn operator instead.
+    # compute attention. Use cudnn operator when supported.
     b,c,h,w = q.shape
-    print(f"call: {q.shape}, {k.shape}, {v.shape}\n\n")
-    #q,k,v = [x.reshape(b,c,h*w).transpose(1,2) for x in (q,k,v)]
-    print(f"call: {q.shape}, {k.shape}, {v.shape}\n\n")
-    #h_ = scaled_dot_product_attention(q,k,v).transpose(1,2).reshape(b,c,h,w)
-    h_ = scaled_dot_product_attention(q,k,v)
-    return x + self.proj_out(h_)
+    #h_tf = scaled_dot_product_attention(q,k,v)
+    q,k,v = [x.reshape(b,c,h*w).transpose(1,2) for x in (q,k,v)]
+    h_tg = Tensor.scaled_dot_product_attention(q,k,v).transpose(1,2).reshape(b,c,h,w)
+    #np.testing.assert_allclose(h_tg.numpy(), h_tf.numpy(), atol=1e-2, rtol=1e-2)
+    return x + self.proj_out(h_tg)
   
 class CrossAttention:
   def __init__(self, query_dim, context_dim, n_heads, d_head):

@@ -1,6 +1,7 @@
 import cudnn
 import pytest
 import torch
+import cupy as cp
 import itertools
 from looseversion import LooseVersion
 from tinyfusers.ff.layer_norm import layer_norm
@@ -35,7 +36,7 @@ def test_layernorm(param_extract):
     o_pt = torch.nn.functional.layer_norm(x_gpu, [C, H, W], weight=scale_gpu.squeeze(0), bias=bias_gpu.squeeze(0), eps=epsilon_value)
     o_tf = layer_norm(x_gpu, scale_gpu, bias_gpu, epsilon_cpu)
 
-    torch.testing.assert_close(o_pt, torch.from_numpy(o_tf).to("cuda"), atol=atol, rtol=rtol)
+    torch.testing.assert_close(o_pt, torch.from_numpy(cp.asnumpy(o_tf)).to("cuda"), atol=atol, rtol=rtol)
 
 if __name__ == "__main__":
     test_layernorm((1600, torch.bfloat16))#float32

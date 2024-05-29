@@ -39,9 +39,9 @@ def test_precision(B, T, C, NH, HS, scale, dims, input_type):
     att = cp.zeros((B * NH * T, T), dtype=cp.float32)
     preatt = cp.zeros((B, NH, T, T), dtype=cp.float32)
 
-    q_gpu = torch.randn(dims, requires_grad=False, device="cuda", dtype=input_type)
-    k_gpu = torch.randn(dims, requires_grad=False, device="cuda", dtype=input_type)
-    v_gpu = torch.randn(dims, requires_grad=False, device="cuda", dtype=input_type)
+    q_gpu = torch.randn((B, NH, T, HS), requires_grad=False, device="cuda", dtype=input_type)
+    k_gpu = torch.randn((B, NH, T, HS), requires_grad=False, device="cuda", dtype=input_type)
+    v_gpu = torch.randn((B, NH, T, HS), requires_grad=False, device="cuda", dtype=input_type)
 
     q_np = q_gpu.cpu().numpy()
     k_np = k_gpu.cpu().numpy()
@@ -50,6 +50,10 @@ def test_precision(B, T, C, NH, HS, scale, dims, input_type):
     q = cp.asarray(q_np)
     k = cp.asarray(k_np)
     v = cp.asarray(v_np)
+
+    q_t = Tensor(q_np)
+    k_t = Tensor(k_np)
+    v_t = Tensor(v_np)
 
     start_time = monotonic()
     preatt =  cp.matmul(q, cp.transpose(k, axes=(0,1,3,2)))
@@ -63,13 +67,18 @@ def test_precision(B, T, C, NH, HS, scale, dims, input_type):
     pt_time = monotonic()-start_time
 
     start_time = monotonic()
-    o_tg = Tensor.scaled_dot_product_attention(Tensor(q_np), Tensor(k_np), Tensor(v_np))
+    o_tg = Tensor.scaled_dot_product_attention(q_t, k_t, v_t).realize()
     tg_time = monotonic()-start_time
 
-    print(f"TF: {cp_time}, PT: {pt_time}, TG: {tg_time}")
+    start_time = monotonic()
+    o_tff = scaled_dot_product_attention(q_t, k_t, v_t)
+    tff_time = monotonic()-start_time
+
+    print(f"TF: {cp_time}, PT: {pt_time}, TG: {tg_time}, Tff: {tff_time}")
 
     torch.testing.assert_close(torch.from_numpy(cp.asnumpy(o_tf)).to("cuda"), o_pt, atol=1e-2, rtol=1e-2)
     torch.testing.assert_close(o_pt, torch.from_numpy(o_tg.numpy()).to("cuda"), atol=1e-2, rtol=1e-2)
+    torch.testing.assert_close(o_pt, torch.from_numpy(o_tff.numpy()).to("cuda"), atol=1e-2, rtol=1e-2)
 
 @pytest.mark.skipif(LooseVersion(cudnn.backend_version_string()) < "8.9.5", reason="LN not supported below cudnn 8.9.5")
 def test_scaled_dot_product_attention(scale, dims, input_type):

@@ -12,11 +12,7 @@ def layer_norm(x_gpu, scale_gpu, bias_gpu, epsilon_cpu):
     scale_gpu_stride = tuple([scale_gpu.shape[1]*scale_gpu.shape[2]*scale_gpu.shape[3], 1, scale_gpu.shape[1]*scale_gpu.shape[3], scale_gpu.shape[1]])
     bias_gpu_stride = tuple([bias_gpu.shape[1]*bias_gpu.shape[2]*bias_gpu.shape[3], 1, bias_gpu.shape[1]*bias_gpu.shape[3], bias_gpu.shape[1]])
     epsilon_cpu_stride = tuple([1,1,1,1])
-        
-    x_gpu = cp.asarray(x_gpu.numpy())
-    scale_gpu = cp.asarray(scale_gpu.numpy())
-    bias_gpu = cp.asarray(bias_gpu.numpy())
-    
+
     graph = cudnn.pygraph(intermediate_data_type = cudnn.data_type.FLOAT, compute_data_type = cudnn.data_type.FLOAT)
     X = graph.tensor(name = "X", dim = x_gpu_shape, stride = x_gpu_stride, data_type = cudnn.data_type.FLOAT)
     scale = graph.tensor(name = "scale", dim = scale_gpu_shape, stride = scale_gpu_stride, data_type = cudnn.data_type.FLOAT)
@@ -34,7 +30,7 @@ def layer_norm(x_gpu, scale_gpu, bias_gpu, epsilon_cpu):
     Y_actual = cp.empty(X.get_dim(), dtype=cp.float32)
     workspace = cp.empty(graph.get_workspace_size(), dtype=cp.uint8)
     graph.execute({X : x_gpu, scale : scale_gpu, bias : bias_gpu , epsilon: epsilon_cpu , Y : Y_actual}, workspace, handle=handle)
-    return cp.asnumpy(Y_actual)
+    return Y_actual
 
 class LayerNorm:
   def __init__(self, normalized_shape:Union[int, Tuple[int, ...]], eps:float=1e-5, elementwise_affine:bool=True):
@@ -48,7 +44,22 @@ class LayerNorm:
     out_shape = x.shape
     x = x.layernorm(eps=self.eps.item(), axis=self.axis)
     x = x if not self.elementwise_affine else x * self.weight + self.bias
-    y_tf = layer_norm(x.unsqueeze(1), self.weight.unsqueeze(0).unsqueeze(0).unsqueeze(0), self.bias.unsqueeze(0).unsqueeze(0).unsqueeze(0), self.eps.numpy())
-    #np.testing.assert_allclose(x.numpy(), y_tf.reshape(x.shape), atol=1e-2, rtol=1e-2)
-    ttt = Tensor(y_tf.reshape(out_shape), device="cuda")
-    return ttt
+    cur_stream = cp.cuda.get_current_stream()
+    cur_stream.use()
+    print(f"{self.normalized_shape}, {x.shape}, {self.axis}, {self.weight.shape}")
+    x_cp = cp.asarray(x.unsqueeze(1).numpy())
+    scale_cp = cp.asarray(self.weight.unsqueeze(0).unsqueeze(0).unsqueeze(0).numpy())
+    bias_cp = cp.asarray(self.bias.unsqueeze(0).unsqueeze(0).unsqueeze(0).numpy())
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
+
+    y = layer_norm(x_cp, scale_cp, bias_cp, self.eps.numpy())
+    y_tf = cp.asnumpy(y).reshape(out_shape)
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
+    print(f"{y_tf.shape}, {x.shape}")
+    np.testing.assert_allclose(x.numpy(), y_tf, atol=1e-2, rtol=1e-2)
+    ttt = Tensor(y_tf).realize()
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
+    return x

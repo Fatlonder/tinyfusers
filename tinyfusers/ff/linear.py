@@ -36,6 +36,9 @@ class Linear:
     cur_stream.synchronize()
     cp.cuda.Device().synchronize()
     o_tf = cp.dot(x_cp, weight) + bias 
-    np.testing.assert_allclose(cp.asnumpy(o_tf), o_tg.numpy(), atol=1e-2, rtol=1e-2)
-    o_t = Tensor(cp.asnumpy(o_tf))
+    o_np = cp.asnumpy(o_tf)
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
+    np.testing.assert_allclose(o_np, o_tg.numpy(), atol=1e-2, rtol=1e-2)
+    o_t = Tensor(o_np).realize()
     return o_t
