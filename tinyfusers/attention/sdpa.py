@@ -7,6 +7,13 @@ from tinygrad import Tensor
 input_type = cp.float32
 cuda_dir = os.path.abspath('tinyfusers/native/cuda/')
 loaded_from_source = os.path.join(cuda_dir, 'softmax.cu')
+def read_code(code_filename):
+  with open(code_filename, 'r') as f:
+      code = f.read()
+      return code
+options=('--use_fast_math', '-lcublas -lcublasLt', '-D__CUDA_NO_HALF_CONVERSIONS__', f"-I{cuda_dir}")
+module = cp.RawModule(code=read_code(loaded_from_source), backend='nvcc', options=options) 
+softmax_forward_kernel = module.get_function('softmax_forward_kernel')
 
 def cudnn_scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
     b = 4    # batch size
@@ -45,13 +52,6 @@ def cudnn_scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
     return o_gpu
 
 def scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
-    def read_code(code_filename):
-      with open(code_filename, 'r') as f:
-          code = f.read()
-          return code
-    options=('--use_fast_math', '-lcublas -lcublasLt', '-D__CUDA_NO_HALF_CONVERSIONS__', f"-I{cuda_dir}")
-    module = cp.RawModule(code=read_code(loaded_from_source), backend='nvcc', options=options) 
-    softmax_forward_kernel = module.get_function('softmax_forward_kernel')
     cur_stream = cp.cuda.get_current_stream()
     cur_stream.use()
     q_cp = cp.asarray(q_gpu.numpy())
