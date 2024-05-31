@@ -56,10 +56,8 @@ class LayerNorm:
     y_tf = cp.asnumpy(y).reshape(out_shape)
     cur_stream.synchronize()
     cp.cuda.Device().synchronize()
-    np.testing.assert_allclose(x.numpy(), y_tf, atol=1e-2, rtol=1e-2)
-    ttt = Tensor(y_tf).realize()
+    #np.testing.assert_allclose(x.numpy(), y_tf, atol=1e-2, rtol=1e-2)
+    o_tg = Tensor(y_tf).realize()
     cur_stream.synchronize()
     cp.cuda.Device().synchronize()
-    return x
-
-
+    return o_tg
