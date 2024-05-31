@@ -38,28 +38,28 @@ class LayerNorm:
     self.axis, self.elementwise_affine = tuple(-1-i for i in range(len(self.normalized_shape))), elementwise_affine
     self.weight, self.bias = (Tensor.ones(*self.normalized_shape), Tensor.zeros(*self.normalized_shape)) if elementwise_affine else (None, None)
     self.eps = Tensor.full((1, 1, 1, 1), eps, device="cpu")
-
   def __call__(self, x:Tensor):
     assert self.normalized_shape == x.shape[-len(self.normalized_shape):], f"last dimensions of {x.shape} must match {self.normalized_shape}"
     out_shape = x.shape
-    x = x.layernorm(eps=self.eps.item(), axis=self.axis)
-    x = x if not self.elementwise_affine else x * self.weight + self.bias
     cur_stream = cp.cuda.get_current_stream()
     cur_stream.use()
-    print(f"{self.normalized_shape}, {x.shape}, {self.axis}, {self.weight.shape}")
     x_cp = cp.asarray(x.unsqueeze(1).numpy())
     scale_cp = cp.asarray(self.weight.unsqueeze(0).unsqueeze(0).unsqueeze(0).numpy())
     bias_cp = cp.asarray(self.bias.unsqueeze(0).unsqueeze(0).unsqueeze(0).numpy())
     cur_stream.synchronize()
     cp.cuda.Device().synchronize()
 
+    x = x.layernorm(eps=self.eps.item(), axis=self.axis)
+    x = x if not self.elementwise_affine else x * self.weight + self.bias
+
     y = layer_norm(x_cp, scale_cp, bias_cp, self.eps.numpy())
     y_tf = cp.asnumpy(y).reshape(out_shape)
     cur_stream.synchronize()
     cp.cuda.Device().synchronize()
-    print(f"{y_tf.shape}, {x.shape}")
     np.testing.assert_allclose(x.numpy(), y_tf, atol=1e-2, rtol=1e-2)
     ttt = Tensor(y_tf).realize()
     cur_stream.synchronize()
     cp.cuda.Device().synchronize()
     return x
+
+
