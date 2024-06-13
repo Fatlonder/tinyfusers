@@ -23,6 +23,7 @@ setup(name='tinyfusers',
                         "pyobjc-framework-libdispatch; platform_system=='Darwin'"],
       python_requires='>=3.8',
       packages = ['tinyfusers', 'tinyfusers.attention', 'tinyfusers.ff', 'tinyfusers.tokenizer',
-                  'tinyfusers.vae', 'tinyfusers.variants', 'tinyfusers.vision'],
+                  'tinyfusers.vae', 'tinyfusers.variants', 
+                  'tinyfusers.vision', 'tinyfusers.storage'],
  
       include_package_data=True)
