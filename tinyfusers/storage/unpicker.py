@@ -1,7 +1,11 @@
 import zipfile, pickle, struct, io
 import collections
 import numpy as np
+import gc
+import ctypes
 
+libc = ctypes.CDLL("libc.so.6")
+buffer = []
 def load_tensor_data(file_name):
   if zipfile.is_zipfile(file_name):
     myzip = zipfile.ZipFile(file_name, 'r')
@@ -13,7 +17,6 @@ def load_tensor_data(file_name):
   return buffer
 
 def _rebuild_tensor_v2(storage, storage_offset, size, stride, requires_grad, backward_hooks, metadata=None):
-  #tensor = torch.as_strided(torch.Tensor(storage(), device=storage.device), size=size, stride=stride)
   tensor = np.reshape(storage(), size) #check other cases for stride inconsistency.
   tensor = tensor.astype(np.float32) #read dtype from storage
   return tensor
@@ -56,6 +59,14 @@ class TorchUnpickler(pickle.Unpickler):
     
 def load_weights(weight_path):
     global buffer
-    buffer = load_tensor_data(f"{weight_path}.pth")
-    with open(f"{weight_path}/data.pkl", 'rb') as f: st = f.read()
-    return TorchUnpickler(io.BytesIO(st)).load()
+    buffer = load_tensor_data(weight_path)
+    if zipfile.is_zipfile(weight_path):
+      myzip = zipfile.ZipFile(weight_path, 'r')
+      base_name = myzip.namelist()[0].split('/', 1)[0]
+    with myzip.open(f'{base_name}/data.pkl') as myfile:
+        tensor = TorchUnpickler(io.BytesIO(myfile.read())).load()
+        buffer = []
+        #del buffer
+        gc.collect()
+        libc.malloc_trim(0)
+        return tensor

@@ -17,8 +17,8 @@ def test_simplermodel_weight_load(weight_path, fc2):
     np.testing.assert_allclose(weight_dict['fc2.weight'], fc2, atol=1e-2, rtol=1e-2)
 
 if __name__ == "__main__":
-    weight_path = "path/waddd"
+    weight_path = "path/waddd.pth"
     model = SimplerModel()
     fc2 = model.state_dict()['fc2.weight'].numpy()
-    torch.save(model.state_dict(), "waddd.pth")
+    torch.save(model.state_dict(), weight_path)
     test_simplermodel_weight_load(weight_path, fc2)
