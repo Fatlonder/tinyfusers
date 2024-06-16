@@ -1,11 +1,16 @@
 import zipfile, pickle, io
 import collections
 import numpy as np
+import _codecs
 import gc
 import ctypes
 
 libc = ctypes.CDLL("libc.so.6")
 buffer = {}
+
+def encode(*args):
+    out = _codecs.encode(*args)
+    return out
 
 def load_tensor_data(file_name):
   if zipfile.is_zipfile(file_name):
@@ -28,7 +33,7 @@ class TypedStorage():
     self.file_index = file_index
     self.device = device
     self.num_elements = num_elements
-    self.dtype_dict = {"float32": "f", "float16": "f", "int32": "i", "int64": "i"} # expand latter: https://docs.python.org/3/library/struct.html#format-characters
+    self.dtype_dict = {"float32": "f", "float16": "f", "int32": "i", "int64": "l"} # expand latter: https://docs.python.org/3/library/struct.html#format-characters
   def __call__(self):
     return buffer[self.file_index].cast(self.dtype_dict[self.dtype]).tolist()
   def nbytes(self):
@@ -60,6 +65,10 @@ class TorchUnpickler(pickle.Unpickler):
             return np.core.multiarray.scalar
         if module == 'numpy' and name == 'dtype':
             return np.dtype
+        if module == '_codecs' and name == 'encode':
+            return encode
+        if module == 'pytorch_lightning.callbacks.model_checkpoint' and name == 'ModelCheckpoint':
+            return "model_checkpoint"
         raise pickle.UnpicklingError(f"global {module}.{name} is not supported")
     
 def load_weights(weight_path):
