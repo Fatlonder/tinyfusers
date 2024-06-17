@@ -13,8 +13,13 @@ def update_state(obj, state_dict, prefix=''):
     elif isinstance(obj, dict):
       for k,v in obj.items():
         if k in {"weight", "bias"}:
-          print(f"{prefix}.{k}")
+          if f"{prefix}.{k}" not in state_dict:
+            print(f"skipped: {prefix}.{k}")
+            continue
           obj[k] = state_dict[f"{prefix}.{k}"]
         else:
           pre = f"{prefix}.{k}" if prefix!='' else f"{k}"
           update_state(v, state_dict, f"{pre}")
+
+def get_state_dict(net):
+  pass
