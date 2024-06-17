@@ -1,6 +1,6 @@
 import math
 from tinygrad import Tensor, dtypes
-from .conv2d4 import Conv2d
+from .conv2d import Conv2d
 from ..attention.attention import SpatialTransformer
 from ..vision.resnet import ResBlock
 from ..ff.linear import Linear

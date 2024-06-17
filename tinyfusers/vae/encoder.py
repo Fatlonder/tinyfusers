@@ -2,7 +2,7 @@ from tinygrad import Tensor
 from .mid import Mid
 from ..attention.attention import CLIPAttention
 from ..vision.resnet import ResnetBlock
-from ..vision.conv2d4 import Conv2d
+from ..vision.conv2d import Conv2d
 from ..ff.nn import CLIPMLP
 from ..ff.layer_norm import LayerNorm
 from ..ff.group_norm import GroupNorm

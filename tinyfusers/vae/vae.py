@@ -1,6 +1,6 @@
 from .encoder import Encoder
 from .decoder import Decoder
-from ..vision.conv2d4 import Conv2d
+from ..vision.conv2d import Conv2d
 
 
 class AutoencoderKL:

@@ -1,5 +1,5 @@
 from tinygrad import Tensor
-from .conv2d4 import Conv2d
+from .conv2d import Conv2d
 from ..ff.linear import Linear
 from ..ff.group_norm import GroupNorm
 

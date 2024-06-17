@@ -1,6 +1,6 @@
 from .mid import Mid
 from ..vision.resnet import ResnetBlock
-from ..vision.conv2d4 import Conv2d
+from ..vision.conv2d import Conv2d
 from ..ff.group_norm import GroupNorm
 
 class Decoder:

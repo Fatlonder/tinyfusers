@@ -5,7 +5,7 @@ from ..ff.nn import FeedForward
 from ..ff.linear import Linear
 from ..ff.group_norm import GroupNorm
 from ..ff.layer_norm import LayerNorm
-from ..vision.conv2d4 import Conv2d
+from ..vision.conv2d import Conv2d
 
 class AttnBlock:
   def __init__(self, in_channels):
