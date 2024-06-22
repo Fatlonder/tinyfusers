@@ -1,4 +1,4 @@
-import numpy as np
+import cupy as cp
 from tinygrad import Tensor
 from .sdpa import scaled_dot_product_attention
 from ..ff.nn import FeedForward
@@ -17,16 +17,24 @@ class AttnBlock:
 
   # copied from AttnBlock in ldm repo
   def __call__(self, x):
+    cur_stream = cp.cuda.get_current_stream()
+    cur_stream.use()
     h_ = self.norm(x)
     q,k,v = self.q(h_), self.k(h_), self.v(h_)
-
     # compute attention. Use cudnn operator when supported.
     b,c,h,w = q.shape
     #h_tf = scaled_dot_product_attention(q,k,v)
     q,k,v = [x.reshape(b,c,h*w).transpose(1,2) for x in (q,k,v)]
+    q, k, v = Tensor(cp.asnumpy(q)), Tensor(cp.asnumpy(k)), Tensor(cp.asnumpy(v))
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
     h_tg = Tensor.scaled_dot_product_attention(q,k,v).transpose(1,2).reshape(b,c,h,w)
     #np.testing.assert_allclose(h_tg.numpy(), h_tf.numpy(), atol=1e-2, rtol=1e-2)
-    return x + self.proj_out(h_tg)
+    h_tg = cp.asarray(h_tg.numpy())
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
+    o_tg = x + self.proj_out(h_tg)
+    return o_tg
   
 class CrossAttention:
   def __init__(self, query_dim, context_dim, n_heads, d_head):
@@ -38,12 +46,21 @@ class CrossAttention:
     self.to_out = [Linear(n_heads*d_head, query_dim)]
 
   def __call__(self, x, context=None):
+    cur_stream = cp.cuda.get_current_stream()
+    cur_stream.use()
     context = x if context is None else context
     q,k,v = self.to_q(x), self.to_k(context), self.to_v(context)
+    q, k, v = Tensor(cp.asnumpy(q)), Tensor(cp.asnumpy(k)), Tensor(cp.asnumpy(v))
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
     q,k,v = [y.reshape(x.shape[0], -1, self.num_heads, self.head_size).transpose(1,2) for y in (q,k,v)]
     attention = Tensor.scaled_dot_product_attention(q, k, v).transpose(1,2)
     h_ = attention.reshape(x.shape[0], -1, self.num_heads * self.head_size)
-    return h_.sequential(self.to_out)  
+    o_tf = cp.asarray(h_.numpy())
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
+    o_tf = self.to_out[0](o_tf)
+    return o_tf  
   
 class BasicTransformerBlock:
   def __init__(self, dim, context_dim, n_heads, d_head):
@@ -91,8 +108,19 @@ class CLIPAttention:
     self.out_proj = Linear(self.embed_dim, self.embed_dim)
 
   def __call__(self, hidden_states, causal_attention_mask):
+    cur_stream = cp.cuda.get_current_stream()
+    cur_stream.use()
     bsz, tgt_len, embed_dim = hidden_states.shape
     q,k,v = self.q_proj(hidden_states), self.k_proj(hidden_states), self.v_proj(hidden_states)
-    q,k,v = [x.reshape(bsz, tgt_len, self.num_heads, self.head_dim).transpose(1, 2) for x in (q,k,v)]
-    attn_output = Tensor.scaled_dot_product_attention(q, k, v, attn_mask=causal_attention_mask)
-    return self.out_proj(attn_output.transpose(1, 2).reshape(bsz, tgt_len, embed_dim))
+    q_c, k_c, v_c = Tensor(cp.asnumpy(q)), Tensor(cp.asnumpy(k)), Tensor(cp.asnumpy(v))
+    causal_attention_mask = Tensor(cp.asnumpy(causal_attention_mask)).realize()
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
+    q_c,k_c,v_c = [x.reshape(bsz, tgt_len, self.num_heads, self.head_dim).transpose(1, 2) for x in (q_c,k_c,v_c)]
+    attn_output = Tensor.scaled_dot_product_attention(q_c, k_c, v_c, attn_mask=causal_attention_mask)
+    attn_output = attn_output.transpose(1, 2).reshape(bsz, tgt_len, embed_dim)
+    attn_output = cp.asarray(attn_output.numpy())
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
+    o_cp = self.out_proj(attn_output)
+    return o_cp

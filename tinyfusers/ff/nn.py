@@ -1,3 +1,5 @@
+import cupy as cp
+from tinygrad import Tensor
 from .linear import  Linear
 
 class GEGLU:
@@ -26,7 +28,15 @@ class CLIPMLP:
     self.fc2 = Linear(3072, 768)
 
   def __call__(self, hidden_states):
+    cur_stream = cp.cuda.get_current_stream()
+    cur_stream.use()
     hidden_states = self.fc1(hidden_states)
-    hidden_states = hidden_states.quick_gelu()
+    ot = Tensor(cp.asnumpy(hidden_states))
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
+    hidden_states = ot.quick_gelu()
+    hidden_states = cp.asarray(hidden_states.numpy())
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
     hidden_states = self.fc2(hidden_states)
     return hidden_states

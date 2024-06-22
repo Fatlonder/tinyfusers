@@ -1,6 +1,6 @@
 from collections import namedtuple
-import numpy as np
-from tinygrad import Device, dtypes, Tensor
+import cupy as cp
+from tinygrad import Device, dtypes
 from ..vision.unet import UNetModel
 from ..vae.vae import AutoencoderKL
 from ..vae.encoder import CLIPTextTransformer
@@ -28,7 +28,9 @@ class StableDiffusion:
 
   def get_model_output(self, unconditional_context, context, latent, timestep, unconditional_guidance_scale):
     # put into diffuser
-    latents = self.model.diffusion_model(latent.expand(2, *latent.shape[1:]), timestep, unconditional_context.cat(context, dim=0))
+    ltnt_brdcst = cp.broadcast_to(latent, (2, *latent.shape[1:]))
+    unc_cntx = cp.concatenate((unconditional_context, context), axis=0) 
+    latents = self.model.diffusion_model(ltnt_brdcst, timestep, unc_cntx)
     unconditional_latent, latent = latents[0:1], latents[1:2]
 
     e_t = unconditional_latent + unconditional_guidance_scale * (latent - unconditional_latent)
@@ -49,10 +51,10 @@ class StableDiffusion:
     #e_t_next = get_model_output(x_prev)
     #e_t_prime = (e_t + e_t_next) / 2
     #x_prev, pred_x0 = get_x_prev_and_pred_x0(latent, e_t_prime, index)
-    return x_prev.realize()
+    return x_prev
 
 def get_alphas_cumprod(beta_start=0.00085, beta_end=0.0120, n_training_steps=1000):
-  betas = np.linspace(beta_start ** 0.5, beta_end ** 0.5, n_training_steps, dtype=np.float32) ** 2
+  betas = cp.linspace(beta_start ** 0.5, beta_end ** 0.5, n_training_steps, dtype=cp.float32) ** 2
   alphas = 1.0 - betas
-  alphas_cumprod = np.cumprod(alphas, axis=0)
-  return Tensor(alphas_cumprod)
+  alphas_cumprod = cp.cumprod(alphas, axis=0)
+  return alphas_cumprod

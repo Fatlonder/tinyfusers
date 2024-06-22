@@ -1,3 +1,4 @@
+import cupy as cp
 from tinygrad import Tensor
 from .mid import Mid
 from ..attention.attention import CLIPAttention
@@ -81,6 +82,13 @@ class CLIPTextTransformer:
     self.final_layer_norm = LayerNorm(768)
 
   def __call__(self, input_ids):
-    x = self.embeddings(input_ids, Tensor.arange(input_ids.shape[1]).reshape(1, -1))
-    x = self.encoder(x, Tensor.full((1, 1, 77, 77), float("-inf")).triu(1))
-    return self.final_layer_norm(x)
+    cur_stream = cp.cuda.get_current_stream()
+    cur_stream.use()
+    o_cp  = cp.asarray(Tensor.arange(input_ids.shape[1]).reshape(1, -1).numpy())
+    t = cp.asarray(Tensor.full((1, 1, 77, 77), float("-inf")).triu(1).numpy())
+    cur_stream.synchronize()
+    cp.cuda.Device().synchronize()
+    x = self.embeddings(input_ids, o_cp)
+    x = self.encoder(x, t)
+    o_cp = self.final_layer_norm(x)
+    return o_cp

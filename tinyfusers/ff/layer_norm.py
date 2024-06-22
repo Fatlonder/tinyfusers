@@ -2,7 +2,6 @@ import cudnn
 import cupy as cp
 import numpy as np
 from typing import Union, Tuple
-from tinygrad.tensor import Tensor
 
 handle = cudnn.create_handle()
 
@@ -36,28 +35,15 @@ class LayerNorm:
   def __init__(self, normalized_shape:Union[int, Tuple[int, ...]], eps:float=1e-5, elementwise_affine:bool=True):
     self.normalized_shape = (normalized_shape,) if isinstance(normalized_shape, int) else tuple(normalized_shape)
     self.axis, self.elementwise_affine = tuple(-1-i for i in range(len(self.normalized_shape))), elementwise_affine
-    self.weight, self.bias = (Tensor.ones(*self.normalized_shape), Tensor.zeros(*self.normalized_shape)) if elementwise_affine else (None, None)
-    self.eps = Tensor.full((1, 1, 1, 1), eps, device="cpu")
-  def __call__(self, x:Tensor):
+    self.weight = cp.ones(*self.normalized_shape, dtype=cp.float32)if elementwise_affine else None
+    self.bias = cp.zeros(*self.normalized_shape, dtype=cp.float32) if elementwise_affine else None
+    self.eps = np.full((1, 1, 1, 1), eps, dtype=np.float32)
+  def __call__(self, x):
     assert self.normalized_shape == x.shape[-len(self.normalized_shape):], f"last dimensions of {x.shape} must match {self.normalized_shape}"
     out_shape = x.shape
-    cur_stream = cp.cuda.get_current_stream()
-    cur_stream.use()
-    x_cp = cp.asarray(x.unsqueeze(1).numpy())
-    scale_cp = cp.asarray(self.weight.unsqueeze(0).unsqueeze(0).unsqueeze(0).numpy())
-    bias_cp = cp.asarray(self.bias.unsqueeze(0).unsqueeze(0).unsqueeze(0).numpy())
-    cur_stream.synchronize()
-    cp.cuda.Device().synchronize()
-
-    x = x.layernorm(eps=self.eps.item(), axis=self.axis)
-    x = x if not self.elementwise_affine else x * self.weight + self.bias
-
-    y = layer_norm(x_cp, scale_cp, bias_cp, self.eps.numpy())
-    y_tf = cp.asnumpy(y).reshape(out_shape)
-    cur_stream.synchronize()
-    cp.cuda.Device().synchronize()
-    #np.testing.assert_allclose(x.numpy(), y_tf, atol=1e-2, rtol=1e-2)
-    o_tg = Tensor(y_tf).realize()
-    cur_stream.synchronize()
-    cp.cuda.Device().synchronize()
-    return o_tg
+    x = cp.expand_dims(x, 0)
+    scale_cp = cp.expand_dims(cp.expand_dims(cp.expand_dims(self.weight, 0), 0), 0)
+    bias_cp = cp.expand_dims(cp.expand_dims(cp.expand_dims(self.bias, 0), 0), 0)
+    y = layer_norm(x, scale_cp, bias_cp, self.eps)
+    y = y.reshape(out_shape)
+    return y

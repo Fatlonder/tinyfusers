@@ -1,10 +1,11 @@
-import math
-from tinygrad import Tensor, dtypes
+import functools
+import cupy as cp
 from .conv2d import Conv2d
 from ..attention.attention import SpatialTransformer
 from ..vision.resnet import ResBlock
 from ..ff.linear import Linear
 from ..ff.group_norm import GroupNorm
+from ..tensor.tensor import Tensor
 
 class UNetModel:
   def __init__(self):
@@ -55,7 +56,8 @@ class UNetModel:
   def __call__(self, x, timesteps=None, context=None):
     # TODO: real time embedding
     t_emb = timestep_embedding(timesteps, 320)
-    emb = t_emb.sequential(self.time_embed)
+    emb = Tensor.sequential(self.time_embed, t_emb)
+    #emb = t_emb.sequential(self.time_embed)
 
     def run(x, bb):
       if isinstance(bb, ResBlock): x = bb(x, emb)
@@ -81,7 +83,6 @@ class UNetModel:
 class Upsample:
   def __init__(self, channels):
     self.conv = Conv2d(channels, channels, kernel_size=[3,3], padding=[1,1])
-
   def __call__(self, x):
     bs,c,py,px = x.shape
     x = x.reshape(bs, c, py, 1, px, 1).expand(bs, c, py, 2, px, 2).reshape(bs, c, py*2, px*2)
@@ -90,13 +91,12 @@ class Upsample:
 class Downsample:
   def __init__(self, channels):
     self.op = Conv2d(channels, channels, stride=[2,2], kernel_size=[3,3], padding=[1,1])
-
   def __call__(self, x):
     return self.op(x)
 
 def timestep_embedding(timesteps, dim, max_period=10000):
   half = dim // 2
-  # TODO: remove explicit dtypes after broadcast fix
-  freqs = (-math.log(max_period) * Tensor.arange(half, dtype=dtypes.float32) / half).exp()
+  freqs = cp.exp(-cp.log(max_period) * cp.arange(half, dtype=cp.float32) / half)
   args = timesteps * freqs
-  return Tensor.cat(args.cos(), args.sin()).reshape(1, -1)
+  result = cp.concatenate((cp.cos(args), cp.sin(args))).reshape(1, -1)
+  return result
