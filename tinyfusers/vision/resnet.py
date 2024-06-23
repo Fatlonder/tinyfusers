@@ -4,7 +4,6 @@ from ..ff.linear import Linear
 from ..ff.group_norm import GroupNorm
 from ..tensor.tensor import Tensor
 
-
 class ResBlock:
   def __init__(self, channels, emb_channels, out_channels):
     self.in_layers = [
@@ -41,6 +40,6 @@ class ResnetBlock:
     self.nin_shortcut = Conv2d(in_channels, out_channels, kernel_size=[1,1]) if in_channels != out_channels else lambda x: x
 
   def __call__(self, x):
-    h = self.conv1(self.norm1(x).swish())
-    h = self.conv2(self.norm2(h).swish())
+    h = self.conv1(Tensor.swish(self.norm1(x)))
+    h = self.conv2(Tensor.swish(self.norm2(h)))
     return self.nin_shortcut(x) + h

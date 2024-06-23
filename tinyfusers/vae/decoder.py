@@ -1,7 +1,9 @@
+import cupy as cp 
 from .mid import Mid
 from ..vision.resnet import ResnetBlock
 from ..vision.conv2d import Conv2d
 from ..ff.group_norm import GroupNorm
+from ..tensor.tensor import Tensor
 
 class Decoder:
   def __init__(self):
@@ -31,8 +33,7 @@ class Decoder:
       if 'upsample' in l:
         # https://pytorch.org/docs/stable/generated/torch.nn.functional.interpolate.html ?
         bs,c,py,px = x.shape
-        x = x.reshape(bs, c, py, 1, px, 1).expand(bs, c, py, 2, px, 2).reshape(bs, c, py*2, px*2)
+        x = cp.broadcast_to(x.reshape(bs, c, py, 1, px, 1), (bs, c, py, 2, px, 2)).reshape(bs, c, py*2, px*2)
         x = l['upsample']['conv'](x)
-      x.realize()
 
-    return self.conv_out(self.norm_out(x).swish())
+    return self.conv_out(Tensor.swish(self.norm_out(x)))

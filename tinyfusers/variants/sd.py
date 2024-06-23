@@ -1,6 +1,5 @@
 from collections import namedtuple
 import cupy as cp
-from tinygrad import Device, dtypes
 from ..vision.unet import UNetModel
 from ..vae.vae import AutoencoderKL
 from ..vae.encoder import CLIPTextTransformer
@@ -42,8 +41,8 @@ class StableDiffusion:
 
     # make image correct size and scale
     x = (x + 1.0) / 2.0
-    x = x.reshape(3,512,512).permute(1,2,0).clip(0,1)*255
-    return x.cast(dtypes.uint8) if Device.DEFAULT != "WEBGPU" else x
+    x = cp.clip(cp.transpose(x.reshape(3,512,512), (1,2,0)), 0,1) * 255
+    return x.astype(cp.uint8)
 
   def __call__(self, unconditional_context, context, latent, timestep, alphas, alphas_prev, guidance):
     e_t = self.get_model_output(unconditional_context, context, latent, timestep, guidance)

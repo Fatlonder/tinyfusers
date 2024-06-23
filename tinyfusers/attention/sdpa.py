@@ -2,7 +2,6 @@ import cudnn
 import math
 import cupy as cp
 import os
-from tinygrad import Tensor
 
 input_type = cp.float32
 cuda_dir = os.path.abspath('tinyfusers/native/cuda/')
@@ -51,14 +50,11 @@ def cudnn_scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
     graph.execute(variant_pack, workspace)
     return o_gpu
 
-def scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
+def scaled_dot_product_attention(q_cp, k_cp, v_cp):
     cur_stream = cp.cuda.get_current_stream()
     cur_stream.use()
-    q_cp = cp.asarray(q_gpu.numpy())
-    k_cp = cp.transpose(cp.asarray(k_gpu.numpy()), axes=(0,1,3,2))
-    v_cp = cp.asarray(v_gpu.numpy())
-    cur_stream.synchronize()
-    cp.cuda.Device().synchronize()
+    k_cp = cp.transpose(k_cp, axes=(0,1,3,2))
+
     B, NH, T, HS = q_cp.shape
     softmax_block_size = 256
     grid_size = B * NH * T
@@ -70,12 +66,9 @@ def scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
     preatt =  scale * cp.matmul(q_cp, k_cp)
     cur_stream.synchronize()
     cp.cuda.Device().synchronize()
+
     softmax_forward_kernel(grid=(grid_size,), block=(softmax_block_size,), 
                            args=(att, preatt, B * NH * T, T), shared_mem=shared_mem_size)
     att = cp.reshape(att, (B, NH, T, T))
-    o = cp.matmul(att, v_cp)
-    o_np = cp.asnumpy(o)
-    cur_stream.synchronize()
-    cp.cuda.Device().synchronize()
-    o_tg = Tensor(o_np)
+    o_tg = cp.matmul(att, v_cp)
     return o_tg

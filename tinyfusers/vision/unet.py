@@ -57,7 +57,6 @@ class UNetModel:
     # TODO: real time embedding
     t_emb = timestep_embedding(timesteps, 320)
     emb = Tensor.sequential(self.time_embed, t_emb)
-    #emb = t_emb.sequential(self.time_embed)
 
     def run(x, bb):
       if isinstance(bb, ResBlock): x = bb(x, emb)
