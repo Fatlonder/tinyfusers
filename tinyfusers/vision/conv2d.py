@@ -12,8 +12,12 @@ def conv_2d(X_gpu, W_gpu, padding, stride, dilation):
                           intermediate_data_type = cudnn.data_type.FLOAT, 
                           compute_data_type = cudnn.data_type.FLOAT)
     N, K = X_gpu.shape[0], W_gpu.shape[0]
+    x_stride = tuple([X_gpu.shape[1]*X_gpu.shape[2]*X_gpu.shape[3], X_gpu.shape[-2]*X_gpu.shape[-1], X_gpu.shape[-1], 1])
+    w_stride = tuple([W_gpu.shape[1]*W_gpu.shape[2]*W_gpu.shape[3], W_gpu.shape[-2]*W_gpu.shape[-1], W_gpu.shape[-1], 1])
     X = graph.tensor_like(X_gpu)
     W = graph.tensor_like(W_gpu)
+    X.set_stride(x_stride)
+    W.set_stride(w_stride)
     Y = graph.conv_fprop(image = X, weight = W, padding = padding, stride = stride, dilation = dilation, compute_data_type = cudnn.data_type.FLOAT)
     Y.set_output(True)
     graph.build([cudnn.heur_mode.A])
@@ -50,6 +54,6 @@ class Conv2d:
     self.bias = cp.random.uniform(-bound, bound, (out_channels,)) if bias else None
   def __call__(self, x):
       HW = self.weight.shape[2:]
-      o_tf_cp = conv_2d(x, self.weight, padding=self.padding, stride=self.stride, dilation=self.dilation)
+      o_tf_cp = conv_2d(x.astype(cp.float32), self.weight, padding=self.padding, stride=self.stride, dilation=self.dilation)
       o_tf = o_tf_cp if self.bias is None else o_tf_cp + (self.bias.reshape(1, -1, *[1] * len(HW)))
       return o_tf

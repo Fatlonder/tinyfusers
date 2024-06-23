@@ -90,10 +90,10 @@ class SpatialTransformer:
     x_in = x
     x = self.norm(x)
     x = self.proj_in(x)
-    x = x.reshape(b, c, h*w).permute(0,2,1)
+    x = cp.transpose(x.reshape(b, c, h*w), (0,2,1))
     for block in self.transformer_blocks:
       x = block(x, context=context)
-    x = x.permute(0,2,1).reshape(b, c, h, w)
+    x = cp.transpose(x, (0,2,1)).reshape(b, c, h, w)
     ret = self.proj_out(x) + x_in
     return ret  
 

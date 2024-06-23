@@ -15,15 +15,15 @@ class StableDiffusion:
   def get_x_prev_and_pred_x0(self, x, e_t, a_t, a_prev):
     temperature = 1
     sigma_t = 0
-    sqrt_one_minus_at = (1-a_t).sqrt()
+    sqrt_one_minus_at = cp.sqrt(1-a_t)
     #print(a_t, a_prev, sigma_t, sqrt_one_minus_at)
 
-    pred_x0 = (x - sqrt_one_minus_at * e_t) / a_t.sqrt()
+    pred_x0 = (x - sqrt_one_minus_at * e_t) / cp.sqrt(a_t)
 
     # direction pointing to x_t
-    dir_xt = (1. - a_prev - sigma_t**2).sqrt() * e_t
+    dir_xt = cp.sqrt(1. - a_prev - sigma_t**2) * e_t
 
-    x_prev = a_prev.sqrt() * pred_x0 + dir_xt
+    x_prev = cp.sqrt(a_prev) * pred_x0 + dir_xt
     return x_prev, pred_x0
 
   def get_model_output(self, unconditional_context, context, latent, timestep, unconditional_guidance_scale):

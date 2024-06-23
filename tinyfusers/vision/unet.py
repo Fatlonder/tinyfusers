@@ -75,17 +75,17 @@ class UNetModel:
       x = run(x, bb)
     for i,b in enumerate(self.output_blocks):
       #print("output block", i)
-      x = x.cat(saved_inputs.pop(), dim=1)
+      x = cp.concatenate((x, saved_inputs.pop()), axis=1)
       for bb in b:
         x = run(x, bb)
-    return x.sequential(self.out)
+    return Tensor.sequential(self.out, x)
   
 class Upsample:
   def __init__(self, channels):
     self.conv = Conv2d(channels, channels, kernel_size=[3,3], padding=[1,1])
   def __call__(self, x):
     bs,c,py,px = x.shape
-    x = x.reshape(bs, c, py, 1, px, 1).expand(bs, c, py, 2, px, 2).reshape(bs, c, py*2, px*2)
+    x = cp.broadcast_to(x.reshape(bs, c, py, 1, px, 1), (bs, c, py, 2, px, 2)).reshape(bs, c, py*2, px*2)
     return self.conv(x)
 
 class Downsample:

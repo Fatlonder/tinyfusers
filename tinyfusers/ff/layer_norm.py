@@ -7,16 +7,16 @@ handle = cudnn.create_handle()
 
 def layer_norm(x_gpu, scale_gpu, bias_gpu, epsilon_cpu):
     x_gpu_shape, scale_gpu_shape, bias_gpu_shape = x_gpu.shape, scale_gpu.shape, bias_gpu.shape
-    x_gpu_stride = tuple([x_gpu.shape[1]*x_gpu.shape[2]*x_gpu.shape[3], 1, x_gpu.shape[1]*x_gpu.shape[3], x_gpu.shape[1]])
-    scale_gpu_stride = tuple([scale_gpu.shape[1]*scale_gpu.shape[2]*scale_gpu.shape[3], 1, scale_gpu.shape[1]*scale_gpu.shape[3], scale_gpu.shape[1]])
-    bias_gpu_stride = tuple([bias_gpu.shape[1]*bias_gpu.shape[2]*bias_gpu.shape[3], 1, bias_gpu.shape[1]*bias_gpu.shape[3], bias_gpu.shape[1]])
-    epsilon_cpu_stride = tuple([1,1,1,1])
+    x_stride = tuple([x_gpu.shape[1]*x_gpu.shape[2]*x_gpu.shape[3], 1, x_gpu.shape[1]*x_gpu.shape[3], x_gpu.shape[1]])
+    scale_stride = tuple([scale_gpu.shape[1]*scale_gpu.shape[2]*scale_gpu.shape[3], 1, scale_gpu.shape[1]*scale_gpu.shape[3], scale_gpu.shape[1]])
+    bias_stride = tuple([bias_gpu.shape[1]*bias_gpu.shape[2]*bias_gpu.shape[3], 1, bias_gpu.shape[1]*bias_gpu.shape[3], bias_gpu.shape[1]])
+    epsilon_stride = tuple([1,1,1,1])
 
     graph = cudnn.pygraph(intermediate_data_type = cudnn.data_type.FLOAT, compute_data_type = cudnn.data_type.FLOAT)
-    X = graph.tensor(name = "X", dim = x_gpu_shape, stride = x_gpu_stride, data_type = cudnn.data_type.FLOAT)
-    scale = graph.tensor(name = "scale", dim = scale_gpu_shape, stride = scale_gpu_stride, data_type = cudnn.data_type.FLOAT)
-    bias = graph.tensor(name = "bias", dim = bias_gpu_shape, stride = bias_gpu_stride, data_type = cudnn.data_type.FLOAT)
-    epsilon = graph.tensor(name = "epsilon", dim = epsilon_cpu.shape, stride = epsilon_cpu_stride, is_pass_by_value = True, data_type = cudnn.data_type.FLOAT)
+    X = graph.tensor(name = "X", dim = x_gpu_shape, stride = x_stride, data_type = cudnn.data_type.FLOAT)
+    scale = graph.tensor(name = "scale", dim = scale_gpu_shape, stride = scale_stride, data_type = cudnn.data_type.FLOAT)
+    bias = graph.tensor(name = "bias", dim = bias_gpu_shape, stride = bias_stride, data_type = cudnn.data_type.FLOAT)
+    epsilon = graph.tensor(name = "epsilon", dim = epsilon_cpu.shape, stride = epsilon_stride, is_pass_by_value = True, data_type = cudnn.data_type.FLOAT)
     
     Y, mean, inv_var = graph.layernorm(name = "layer_norm", 
                         norm_forward_phase = cudnn.norm_forward_phase.INFERENCE,

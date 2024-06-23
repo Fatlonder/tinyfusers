@@ -1,7 +1,9 @@
-from tinygrad import Tensor
+import cupy as cp
 from .conv2d import Conv2d
 from ..ff.linear import Linear
 from ..ff.group_norm import GroupNorm
+from ..tensor.tensor import Tensor
+
 
 class ResBlock:
   def __init__(self, channels, emb_channels, out_channels):
@@ -23,10 +25,10 @@ class ResBlock:
     self.skip_connection = Conv2d(channels, out_channels, kernel_size=[1,1]) if channels != out_channels else lambda x: x
 
   def __call__(self, x, emb):
-    h = x.sequential(self.in_layers)
-    emb_out = emb.sequential(self.emb_layers)
-    h = h + emb_out.reshape(*emb_out.shape, 1, 1)
-    h = h.sequential(self.out_layers)
+    h = Tensor.sequential(self.in_layers, x)
+    emb_out = Tensor.sequential(self.emb_layers, emb)
+    h = h + emb_out.reshape(*emb_out.shape, 1, 1).astype(cp.float32)
+    h = Tensor.sequential(self.out_layers, h)
     ret = self.skip_connection(x) + h
     return ret
 

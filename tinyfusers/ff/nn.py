@@ -8,7 +8,7 @@ class GEGLU:
     self.dim_out = dim_out
 
   def __call__(self, x):
-    x, gate = self.proj(x).chunk(2, dim=-1)
+    x, gate = cp.split(self.proj(x), 2, axis=-1)
     return x * Tensor.gelu(gate)
 
 class FeedForward:
