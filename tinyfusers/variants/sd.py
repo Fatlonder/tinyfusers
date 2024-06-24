@@ -28,7 +28,7 @@ class StableDiffusion:
   def get_model_output(self, unconditional_context, context, latent, timestep, unconditional_guidance_scale):
     # put into diffuser
     ltnt_brdcst = cp.broadcast_to(latent, (2, *latent.shape[1:]))
-    unc_cntx = cp.concatenate((unconditional_context, context), axis=0) 
+    unc_cntx = cp.concatenate((unconditional_context, context), axis=0).astype(cp.float32) 
     latents = self.model.diffusion_model(ltnt_brdcst, timestep, unc_cntx)
     unconditional_latent, latent = latents[0:1], latents[1:2]
 

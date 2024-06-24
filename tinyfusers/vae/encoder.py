@@ -8,7 +8,6 @@ from ..ff.layer_norm import LayerNorm
 from ..ff.group_norm import GroupNorm
 from ..ff.embedding import Embedding
 
-
 class Encoder:
   def __init__(self):
     sz = [(128, 128), (128, 256), (256, 512), (512, 512)]
@@ -81,7 +80,7 @@ class CLIPTextTransformer:
     self.final_layer_norm = LayerNorm(768)
 
   def __call__(self, input_ids):
-    x = self.embeddings(input_ids, cp.arange(input_ids.shape[1]).reshape(1, -1))
-    x = self.encoder(x, cp.triu(cp.full((1, 1, 77, 77), float("-inf")), k=1) )
+    x = self.embeddings(input_ids, cp.arange(input_ids.shape[1]).reshape(1, -1).astype(input_ids.dtype))
+    x = self.encoder(x, cp.triu(cp.full((1, 1, 77, 77), float("-inf")), k=1).astype(input_ids.dtype))
     o_cp = self.final_layer_norm(x)
     return o_cp

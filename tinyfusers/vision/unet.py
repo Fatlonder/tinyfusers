@@ -74,7 +74,7 @@ class UNetModel:
       x = run(x, bb)
     for i,b in enumerate(self.output_blocks):
       #print("output block", i)
-      x = cp.concatenate((x, saved_inputs.pop()), axis=1)
+      x = cp.concatenate((x, saved_inputs.pop()), axis=1).astype(cp.float32)
       for bb in b:
         x = run(x, bb)
     return Tensor.sequential(self.out, x)
@@ -97,5 +97,5 @@ def timestep_embedding(timesteps, dim, max_period=10000):
   half = dim // 2
   freqs = cp.exp(-cp.log(max_period) * cp.arange(half, dtype=cp.float32) / half)
   args = timesteps * freqs
-  result = cp.concatenate((cp.cos(args), cp.sin(args))).reshape(1, -1)
+  result = cp.concatenate((cp.cos(args), cp.sin(args))).reshape(1, -1).astype(cp.float32)
   return result
