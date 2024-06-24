@@ -51,7 +51,7 @@ class Conv2d:
     self.stride, self.padding, self.dilation, self.groups = stride, padding, dilation, groups
     self.weight =  cp.random.uniform(-math.sqrt(3.0), math.sqrt(3.0), (out_channels, in_channels // self.groups, *self.kernel_size), dtype=cp.float32)
     bound = 1 / math.sqrt(cast(int, functools.reduce(operator.mul, self.weight.shape[1:], 1)))
-    self.bias = cp.random.uniform(-bound, bound, (out_channels,)) if bias else None
+    self.bias = cp.random.uniform(-bound, bound, (out_channels,), dtype=cp.float32) if bias else None
   def __call__(self, x):
       HW = self.weight.shape[2:]
       o_tf_cp = conv_2d(x.astype(cp.float32), self.weight, padding=self.padding, stride=self.stride, dilation=self.dilation)

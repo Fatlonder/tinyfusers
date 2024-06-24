@@ -1,11 +1,10 @@
-import functools
 import cupy as cp
-from .conv2d import Conv2d
 from ..attention.attention import SpatialTransformer
 from ..vision.resnet import ResBlock
 from ..ff.linear import Linear
 from ..ff.group_norm import GroupNorm
 from ..tensor.tensor import Tensor
+from .conv2d import Conv2d
 
 class UNetModel:
   def __init__(self):

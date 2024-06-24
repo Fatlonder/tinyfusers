@@ -17,10 +17,10 @@ class StableDiffusion:
     sqrt_one_minus_at = cp.sqrt(1-a_t)
     #print(a_t, a_prev, sigma_t, sqrt_one_minus_at)
 
-    pred_x0 = (x - sqrt_one_minus_at * e_t) / cp.sqrt(a_t)
+    pred_x0 = (x - sqrt_one_minus_at * e_t).astype(x.dtype) / cp.sqrt(a_t)
 
     # direction pointing to x_t
-    dir_xt = cp.sqrt(1. - a_prev - sigma_t**2) * e_t
+    dir_xt = cp.sqrt(1. - a_prev - sigma_t**2).astype(x.dtype) * e_t
 
     x_prev = cp.sqrt(a_prev) * pred_x0 + dir_xt
     return x_prev, pred_x0
@@ -28,7 +28,7 @@ class StableDiffusion:
   def get_model_output(self, unconditional_context, context, latent, timestep, unconditional_guidance_scale):
     # put into diffuser
     ltnt_brdcst = cp.broadcast_to(latent, (2, *latent.shape[1:]))
-    unc_cntx = cp.concatenate((unconditional_context, context), axis=0).astype(cp.float32) 
+    unc_cntx = cp.concatenate((unconditional_context, context), axis=0).astype(latent.dtype) 
     latents = self.model.diffusion_model(ltnt_brdcst, timestep, unc_cntx)
     unconditional_latent, latent = latents[0:1], latents[1:2]
 
