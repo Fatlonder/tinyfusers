@@ -50,25 +50,28 @@ def cudnn_scaled_dot_product_attention(q_gpu, k_gpu, v_gpu):
     graph.execute(variant_pack, workspace)
     return o_gpu
 
-def scaled_dot_product_attention(q_cp, k_cp, v_cp):
+def scaled_dot_product_attention(q_cp, k_cp, v_cp, attn_mask=None):
     cur_stream = cp.cuda.get_current_stream()
     cur_stream.use()
+    B, NH, T_q, HS = q_cp.shape
+    T_k, T_v, HS_V = k_cp.shape[-2], v_cp.shape[-2], v_cp.shape[-1]
     k_cp = cp.transpose(k_cp, axes=(0,1,3,2))
-
-    B, NH, T, HS = q_cp.shape
     softmax_block_size = 256
-    grid_size = B * NH * T
+    grid_size = B * NH * T_q
     shared_mem_size = 2 * softmax_block_size / 32 * 4 #sizeof(float)
     scale = cp.single(1.0 / math.sqrt(HS))
-    att = cp.zeros((B * NH * T, T), dtype=input_type)
-    preatt = cp.zeros((B, NH, T, T), dtype=input_type)
+    preatt = cp.zeros((B, NH, T_q, T_k), dtype=input_type)
+    att = cp.zeros((B * NH * T_q, T_k), dtype=input_type)
 
     preatt =  scale * cp.matmul(q_cp, k_cp)
+    if attn_mask is not None:
+        preatt = preatt + cp.where(attn_mask == 0, -float("inf"), 0) if attn_mask.dtype == cp.bool_ else preatt + attn_mask
+
     cur_stream.synchronize()
     cp.cuda.Device().synchronize()
 
     softmax_forward_kernel(grid=(grid_size,), block=(softmax_block_size,), 
-                           args=(att, preatt, B * NH * T, T), shared_mem=shared_mem_size)
-    att = cp.reshape(att, (B, NH, T, T))
+                           args=(att, preatt, B * NH * T_q, T_k), shared_mem=shared_mem_size)
+    att = cp.reshape(att, (B, NH, T_q, T_k))
     o_tg = cp.matmul(att, v_cp)
     return o_tg
