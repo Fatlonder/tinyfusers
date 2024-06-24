@@ -18,12 +18,12 @@ setup(name='tinyfusers',
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License"
       ],
-      install_requires=["tinygrad", "tqdm", "looseversion","pytest",
+      install_requires=["tqdm", "looseversion","pytest",
                         "pyobjc-framework-Metal; platform_system=='Darwin'",
                         "pyobjc-framework-libdispatch; platform_system=='Darwin'"],
       python_requires='>=3.8',
       packages = ['tinyfusers', 'tinyfusers.attention', 'tinyfusers.ff', 'tinyfusers.tokenizer',
                   'tinyfusers.vae', 'tinyfusers.variants', 
-                  'tinyfusers.vision', 'tinyfusers.storage'],
+                  'tinyfusers.vision', 'tinyfusers.storage', 'tinyfusers.tensor'],
  
       include_package_data=True)
