@@ -21,8 +21,8 @@ def linear(X_gpu, W_gpu, B_gpu):
 class Linear:
   def __init__(self, in_features, out_features, bias=True):
     self.weight = cp.ones((out_features, in_features), dtype=cp.float32)
-    self.bias = cp.ones((out_features), dtype=cp.float32) if bias else cp.zeros((1), dtype=cp.float32)
+    self.bias = cp.ones((out_features), dtype=cp.float32) if bias else None
   def __call__(self, x):
     weight = cp.transpose(self.weight)
-    o_tf = cp.dot(x, weight) + self.bias 
+    o_tf = cp.dot(x, weight) + self.bias if self.bias else cp.dot(x, weight)
     return o_tf
