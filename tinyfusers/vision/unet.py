@@ -1,18 +1,14 @@
 import cupy as cp
+from .conv2d import Conv2d
 from ..attention.attention import SpatialTransformer
 from ..vision.resnet import ResBlock
 from ..ff.linear import Linear
 from ..ff.group_norm import GroupNorm
 from ..tensor.tensor import Tensor
-from .conv2d import Conv2d
 
 class UNetModel:
   def __init__(self):
-    self.time_embed = [
-      Linear(320, 1280),
-      Tensor.silu,
-      Linear(1280, 1280),
-    ]
+    self.time_embed = [Linear(320, 1280), Tensor.silu, Linear(1280, 1280),]
     self.input_blocks = [
       [Conv2d(4, 320, kernel_size=[3,3], padding=[1,1])],
       [ResBlock(320, 1280, 320), SpatialTransformer(320, 768, 8, 40)],
@@ -76,7 +72,8 @@ class UNetModel:
       x = cp.concatenate((x, saved_inputs.pop()), axis=1).astype(cp.float32)
       for bb in b:
         x = run(x, bb)
-    return Tensor.sequential(self.out, x)
+    o_t = Tensor.sequential(self.out, x)
+    return o_t
   
 class Upsample:
   def __init__(self, channels):

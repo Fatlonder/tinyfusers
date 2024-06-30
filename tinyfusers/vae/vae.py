@@ -2,7 +2,6 @@ from .encoder import Encoder
 from .decoder import Decoder
 from ..vision.conv2d import Conv2d
 
-
 class AutoencoderKL:
   def __init__(self):
     self.encoder = Encoder()

@@ -19,7 +19,7 @@ class Tensor:
     
     @staticmethod
     def quick_gelu(x):
-        return Tensor.sigmoid(x * (x * 1.702))
+        return x * Tensor.sigmoid(x * 1.702)
     
     @staticmethod
     def gelu(x):
@@ -28,4 +28,3 @@ class Tensor:
     @staticmethod
     def swish(x):
         return x * Tensor.sigmoid(x)
-

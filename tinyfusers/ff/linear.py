@@ -24,5 +24,5 @@ class Linear:
     self.bias = cp.ones((out_features), dtype=cp.float32) if bias else None
   def __call__(self, x):
     weight = cp.transpose(self.weight)
-    o_tf = cp.dot(x, weight) + self.bias if self.bias else cp.dot(x, weight)
+    o_tf = cp.dot(x, weight) + self.bias if self.bias is not None else cp.dot(x, weight)
     return o_tf

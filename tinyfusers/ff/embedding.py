@@ -7,8 +7,7 @@ mempool = cp.get_default_memory_pool()
 pinned_mempool = cp.get_default_pinned_memory_pool()
 
 def embedding(idx, vocab_sz, embed_sz, weight):
-      cp.cuda.Device().synchronize()
-      if len(idx) == 0:
+      if idx.size == 0:
           return cp.empty(idx.shape + (embed_sz,), dtype=weight.dtype)
       arange_shp = (1, 1, vocab_sz, 1)
       weight_shp = (1, vocab_sz, embed_sz)
@@ -23,7 +22,6 @@ def embedding(idx, vocab_sz, embed_sz, weight):
       #vals *= mask # Gives wrong results for ~11% of elements.
       vals = vals*mask
       c_sum = cp.sum(vals, axis=2)
-      #o_np = cp.asnumpy(c_sum)
       del vals, mask, idx, arange #, c_sum
       gc.collect()
       mempool.free_all_blocks()

@@ -1,4 +1,3 @@
-import cupy as cp
 from .conv2d import Conv2d
 from ..ff.linear import Linear
 from ..ff.group_norm import GroupNorm
@@ -26,7 +25,7 @@ class ResBlock:
   def __call__(self, x, emb):
     h = Tensor.sequential(self.in_layers, x)
     emb_out = Tensor.sequential(self.emb_layers, emb)
-    h = h + emb_out.reshape(*emb_out.shape, 1, 1).astype(cp.float32)
+    h = h + emb_out.reshape(*emb_out.shape, 1, 1)
     h = Tensor.sequential(self.out_layers, h)
     ret = self.skip_connection(x) + h
     return ret
@@ -42,4 +41,5 @@ class ResnetBlock:
   def __call__(self, x):
     h = self.conv1(Tensor.swish(self.norm1(x)))
     h = self.conv2(Tensor.swish(self.norm2(h)))
-    return self.nin_shortcut(x) + h
+    o_tg = self.nin_shortcut(x) + h
+    return o_tg
