@@ -1,11 +1,48 @@
+import math
 import cupy as cp
+import numpy as np
+import ctypes
 import functools
 from .device import Device
+from ..native.cuda.ops import cudart
 
 class Tensor:
-    def __init__(self, device: Device):
+    def __init__(self, shape:tuple, dtype = np.float32, device: Device = "cuda", data: np.array = None):
         self.device = device if device else Tensor.default_device()
-    
+        self.dt_ptr = ctypes.c_void_p()
+        self.shape = shape if data is None else data.shape
+        self.dtype = dtype if data is None else data.dtype
+        self.num_elem = math.prod(self.shape)
+        self.data = data
+
+    def eval(self):
+        if self.device == "cuda":
+            status = cudart.cudaMalloc(self.dt_ptr, (self.dtype*self.num_elem))
+            if status != cudart.CUDA_SUCCESS:
+                raise RuntimeError('cudaMalloc failed with status {}'.format(status))
+            if self.data is not None:
+                status = cudart.cudaMemcpy(self.dt_ptr, self.data.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)), 
+                                       self.data.nbytes, cudart.cudaMemcpyHostToDevice)
+                if status != cudart.CUDA_SUCCESS:
+                    raise RuntimeError('cudaMemcpy (Host to Device) failed with status {}'.format(status))
+        else:
+            self.data = np.zeros(self.shape).astype(self.dtype)
+            self.stride = self.data.strides
+
+    def to(self, device)-> Tensor:
+        if self.device == device: return self
+        if device == "cpu":
+            status = cudart.cudaMemcpy(self.data.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)), 
+                                       self.dt_ptr, self.data.nbytes, cudart.cudaMemcpyDeviceToHost)
+            if status != cudart.CUDA_SUCCESS:
+                raise RuntimeError('cudaMemcpy (Host to Device) failed with status {}'.format(status))
+            self.dta_ptr = 0
+        return self
+
+    @staticmethod
+    def from_np(data:np.array):
+        return Tensor(data.shape, data.dtype, device="cuda", data=data)
+
     @staticmethod
     def default_device():
         return Device("cuda")
