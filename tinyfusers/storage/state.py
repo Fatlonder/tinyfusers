@@ -17,7 +17,7 @@ def update_state(obj, state_dict, prefix=''):
           if f"{prefix}.{k}" not in state_dict:
             print(f"skipped: {prefix}.{k}")
             continue
-          obj[k] = cp.asarray(state_dict[f"{prefix}.{k}"])
+          obj[k] = cp.asarray(state_dict[f"{prefix}.{k}"].numpy())
         else:
           pre = f"{prefix}.{k}" if prefix!='' else f"{k}"
           update_state(v, state_dict, f"{pre}")

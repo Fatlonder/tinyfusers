@@ -1,9 +1,14 @@
 import cupy as cp
 import functools
+from .device import Device
 
 class Tensor:
-    def __init__(self):
-        pass
+    def __init__(self, device: Device):
+        self.device = device if device else Tensor.default_device()
+    
+    @staticmethod
+    def default_device():
+        return Device("cuda")
     
     @staticmethod
     def sigmoid(x):

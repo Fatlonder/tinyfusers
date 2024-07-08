@@ -24,6 +24,7 @@ setup(name='tinyfusers',
       python_requires='>=3.8',
       packages = ['tinyfusers', 'tinyfusers.attention', 'tinyfusers.ff', 'tinyfusers.tokenizer',
                   'tinyfusers.vae', 'tinyfusers.variants', 
-                  'tinyfusers.vision', 'tinyfusers.storage', 'tinyfusers.tensor'],
+                  'tinyfusers.vision', 'tinyfusers.storage', 
+                  'tinyfusers.tensor', 'tinyfusers.native'],
  
       include_package_data=True)
