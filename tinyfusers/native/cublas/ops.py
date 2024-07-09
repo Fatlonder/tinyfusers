@@ -1,24 +1,10 @@
 import ctypes
 
-CUBLAS_STATUS_SUCCESS = 0
-CUBLAS_STATUS_NOT_INITIALIZED = 1
-CUBLAS_STATUS_ALLOC_FAILED = 2
-CUBLAS_STATUS_INVALID_VALUE = 3
-CUBLAS_STATUS_ARCH_MISMATCH = 4
-CUBLAS_STATUS_MAPPING_ERROR = 5
-CUBLAS_STATUS_EXECUTION_FAILED = 6
-CUBLAS_STATUS_INTERNAL_ERROR = 7
-CUBLAS_STATUS_NOT_SUPPORTED = 8
-CUBLAS_STATUS_LICENSE_ERROR = 9
-CUBLAS_OP_N = 0
-CUBLAS_OP_T = 1
-CUBLAS_OP_C = 2
-
 cublasHandle_t = ctypes.c_void_p
 
 class Cublas:
     def __init__(self,):
-        self.dll = ctypes.CDLL(ctypes.util.find_library('cublas'))
+        self.dll = ctypes.CDLL('libcublas.so.12')
 
     def cublasCreate(self, handle):
         self.dll.cublasCreate_v2.restype = ctypes.c_int
@@ -54,3 +40,17 @@ class Cublas:
         return status
 
 cublas = Cublas()
+cublas.CUBLAS_STATUS_SUCCESS = 0
+cublas.CUBLAS_STATUS_NOT_INITIALIZED = 1
+cublas.CUBLAS_STATUS_ALLOC_FAILED = 2
+cublas.CUBLAS_STATUS_INVALID_VALUE = 3
+cublas.CUBLAS_STATUS_ARCH_MISMATCH = 4
+cublas.CUBLAS_STATUS_MAPPING_ERROR = 5
+cublas.CUBLAS_STATUS_EXECUTION_FAILED = 6
+cublas.CUBLAS_STATUS_INTERNAL_ERROR = 7
+cublas.CUBLAS_STATUS_NOT_SUPPORTED = 8
+cublas.CUBLAS_STATUS_LICENSE_ERROR = 9
+cublas.CUBLAS_OP_N = 0
+cublas.CUBLAS_OP_T = 1
+cublas.CUBLAS_OP_C = 2
+cublas.cublasHandle_t = ctypes.c_void_p

@@ -1,17 +1,13 @@
 import ctypes
 
-CUDA_SUCCESS = 0
-cudaMemcpyHostToDevice = 1
-cudaMemcpyDeviceToHost = 2
-
 class Cuda:
     def __init__(self,):
-        self.dll = ctypes.CDLL(ctypes.util.find_library('libcuba.so'))
+        self.dll = ctypes.CDLL('libcudart.so.12')
 
     def cudaMalloc(self, a:ctypes.c_void_p, nbytes):
         self.dll.cudaMalloc.restype = ctypes.c_int
         self.dll.cudaMalloc.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.c_size_t]
-        status = cudart.cudaMalloc(ctypes.byref(a), ctypes.c_size_t(nbytes))
+        status = self.dll.cudaMalloc(ctypes.byref(a), ctypes.c_size_t(nbytes))
         return status
     
     def cudaMemcpy(self, dst, src, nbytes, type):
@@ -27,3 +23,6 @@ class Cuda:
         return status 
      
 cudart = Cuda()
+cudart.CUDA_SUCCESS = 0
+cudart.cudaMemcpyHostToDevice = 1
+cudart.cudaMemcpyDeviceToHost = 2

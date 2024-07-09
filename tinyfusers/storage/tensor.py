@@ -17,7 +17,7 @@ class Tensor:
 
     def eval(self):
         if self.device == "cuda":
-            status = cudart.cudaMalloc(self.dt_ptr, (self.dtype*self.num_elem))
+            status = cudart.cudaMalloc(self.dt_ptr, self.num_elem * np.dtype(self.dtype).itemsize)
             if status != cudart.CUDA_SUCCESS:
                 raise RuntimeError('cudaMalloc failed with status {}'.format(status))
             if self.data is not None:
@@ -29,7 +29,7 @@ class Tensor:
             self.data = np.zeros(self.shape).astype(self.dtype)
             self.stride = self.data.strides
 
-    def to(self, device)-> Tensor:
+    def to(self, device):
         if self.device == device: return self
         if device == "cpu":
             status = cudart.cudaMemcpy(self.data.ctypes.data_as(ctypes.POINTER(ctypes.c_void_p)), 
@@ -40,7 +40,7 @@ class Tensor:
         return self
 
     @staticmethod
-    def from_np(data:np.array):
+    def from_np(data: np.array):
         return Tensor(data.shape, data.dtype, device="cuda", data=data)
 
     @staticmethod
