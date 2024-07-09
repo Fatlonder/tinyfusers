@@ -2,6 +2,7 @@ import cudnn
 import pytest
 import torch
 import cupy as cp
+import numpy as np
 import itertools
 import torch
 from tinygrad import Tensor
@@ -9,6 +10,9 @@ from time import monotonic
 from tinyfusers.ff.linear import linear
 from looseversion import LooseVersion
 from tinyfusers.ff.linear import linear
+from tinyfusers.ff.linear import linear_cublas
+from tinyfusers.storage.tensor import Tensor
+
 
 B, M, N, K, i_dtype = 1, 10000, 20000, 1000, torch.float16
 embedding_dim_options = [768, 1024, 1280, 1600]
@@ -80,6 +84,14 @@ def test_speedup(B, M, N, K, i_dtype):
     torch.testing.assert_close(mat3, fmat3, atol=1e-2, rtol=1e-2)
     torch.testing.assert_close(mat3, torch.from_numpy(cp.asnumpy(tfmat3)).to("cuda"), atol=1e-2, rtol=1e-2)
 
+
+def test_cublas():
+    x = Tensor.from_np(np.ones((2,2)).astype(np.float32)).eval()
+    weight = Tensor.from_np(np.ones((2,2)).astype(np.float32)).eval()
+    res = linear_cublas(x, weight)
+    print(res.to("cpu").data.reshape(2,2))
+
 if __name__ == "__main__":
     test_linear((768, torch.float16))
     test_speedup(B, M, N, K, i_dtype)
+    test_cublas()
