@@ -3,6 +3,9 @@ import numpy as np
 import os
 import sys
 
+'''
+Will be used to interface with device specific runtimes.
+'''
 class Device:
     def __init__(self, device:str):
         CUDA_HOME = os.getenv('CUDA_HOME')

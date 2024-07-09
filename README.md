@@ -1,7 +1,5 @@
-# Tinyfusers is inference engine for diffusion based models.
-The code for stable diffusion is mainly copied from tinygrad's sd example.  
-Compared to diffusers library this example takes lot more time. 
-The goal is to make tinyfusers faster but also usable.  
-
-You need to install `nvidia-cudnn-cu12` and `cudnn-frontend` since kernels rely on them.  
+# - Tinyfusers - 
+## An inference engine for diffusion based models.
+Tinyfusers is built to be faster but also usable.  
+Currently only cuda based devices are supported. You need to install `cudnn`,`cudart`, and `cublas`.
 Run the sd example using: `python3 -m  example.sd1`
