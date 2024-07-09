@@ -14,10 +14,11 @@ class Tensor:
         self.dtype = dtype if data is None else data.dtype
         self.num_elem = math.prod(self.shape)
         self.data = data
+        self.nbytes = self.num_elem * np.dtype(self.dtype).itemsize
 
     def eval(self):
-        if self.device == "cuda":
-            status = cudart.cudaMalloc(self.dt_ptr, self.num_elem * np.dtype(self.dtype).itemsize)
+        if self.device == "cuda" and self.dt_ptr != 0:
+            status = cudart.cudaMalloc(self.dt_ptr, self.num_elem * self.nbytes)
             if status != cudart.CUDA_SUCCESS:
                 raise RuntimeError('cudaMalloc failed with status {}'.format(status))
             if self.data is not None:
@@ -25,9 +26,11 @@ class Tensor:
                                        self.data.nbytes, cudart.cudaMemcpyHostToDevice)
                 if status != cudart.CUDA_SUCCESS:
                     raise RuntimeError('cudaMemcpy (Host to Device) failed with status {}'.format(status))
+            return self
         else:
             self.data = np.zeros(self.shape).astype(self.dtype)
             self.stride = self.data.strides
+            return self
 
     def to(self, device):
         if self.device == device: return self
@@ -36,13 +39,23 @@ class Tensor:
                                        self.dt_ptr, self.data.nbytes, cudart.cudaMemcpyDeviceToHost)
             if status != cudart.CUDA_SUCCESS:
                 raise RuntimeError('cudaMemcpy (Host to Device) failed with status {}'.format(status))
+            
+            status = cudart.cudaFree(self.dt_ptr)
+            if status != cudart.CUDA_SUCCESS:
+                raise RuntimeError('cudaFree failed with status {}'.format(status))
+            
             self.dta_ptr = 0
+            self.device = Device("cpu")
         return self
-
+    
     @staticmethod
     def from_np(data: np.array):
         return Tensor(data.shape, data.dtype, device="cuda", data=data)
-
+    
+    @staticmethod
+    def zeros(shape, dtype):
+        return Tensor.from_np(np.zeros(shape, dtype=dtype))
+    
     @staticmethod
     def default_device():
         return Device("cuda")
