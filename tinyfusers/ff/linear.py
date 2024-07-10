@@ -31,17 +31,21 @@ def linear_cublas(x, weight):
   
   t_op_a = cublas.CUBLAS_OP_N
   t_op_b = cublas.CUBLAS_OP_N
-  m, n, k = 2,2,2
-  lda, ldb, ldc = 2, 2, 2
   alpha, beta = 1.0, 0.0
-  res = Tensor.zeros((2,2), dtype = np.float32).eval() #TODO
+
+  m, k = weight.shape[0], weight.shape[1] # (m,k)
+  _, n = x.shape[0], x.shape[1] # (k, n)
+  
+  lda, ldb, ldc = m, k, n
+  res = Tensor.zeros((m*n), dtype = np.float32).eval() #(m,n)
+
   d_x = x.dt_ptr
   d_w = weight.dt_ptr
   d_res = res.dt_ptr
 
   status = cublas.cublasSgemm(handle, t_op_a, t_op_b,  m, n, k, alpha, 
-                                d_x, lda, 
-                                d_w, ldb, beta, 
+                                d_w, lda, 
+                                d_x, ldb, beta, 
                                 d_res, ldc)
   if status != 0:
       raise RuntimeError('cublasSgemm_v2 failed with status {}'.format(status))
