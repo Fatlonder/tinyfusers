@@ -22,21 +22,20 @@ def linear(X_gpu, W_gpu, B_gpu):
     graph.execute({X: X_gpu, W: W_gpu, B: B_gpu, Y: Y_actual}, workspace, handle=handle)
     return Y_actual
 
-def linear_cublas(x, weight):
+def linear_cublas(weight, x):
   handle = cublas.cublasHandle_t()
-
   status = cublas.cublasCreate(handle)
   if status != 0:
     raise RuntimeError('cublasCreate_v2 failed with status {}'.format(status))
   
-  t_op_a = cublas.CUBLAS_OP_N
-  t_op_b = cublas.CUBLAS_OP_N
+  t_op_a = cublas.CUBLAS_OP_T
+  t_op_b = cublas.CUBLAS_OP_T
   alpha, beta = 1.0, 0.0
 
   m, k = weight.shape[0], weight.shape[1] # (m,k)
   _, n = x.shape[0], x.shape[1] # (k, n)
   
-  lda, ldb, ldc = m, k, m
+  lda, ldb, ldc = k, n, m
   res = Tensor.zeros((m*n), dtype = np.float32).eval() #(m,n)
 
   d_x = x.dt_ptr

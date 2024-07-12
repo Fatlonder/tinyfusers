@@ -57,13 +57,18 @@ def test_speedup(B, M, N, K, i_dtype):
     torch.testing.assert_close(mat3, torch.from_numpy(cp.asnumpy(tfmat3)).to("cuda"), atol=1e-2, rtol=1e-2)
     torch.testing.assert_close(mat3.squeeze(), torch.from_numpy(tfmat4.data.reshape(M, N).to("cuda")), atol=1e-2, rtol=1e-2)
 
-def test_cublas():
-    M, K, N = 2, 2, 2
-    x = Tensor.from_np(np.ones((K, N)).astype(np.float32)).eval()
-    weight = Tensor.from_np(np.ones((M,K)).astype(np.float32)).eval()
-    res = linear_cublas(x, weight)
-    print(res.to("cpu").data.reshape(2,2))
+def test_cublas(M, K, N):
+    w_np = np.random.randn(M,K).astype(np.float32)
+    x_np = np.random.randn(K,N).astype(np.float32)
+    w = Tensor.from_np(w_np).eval()
+    x = Tensor.from_np(x_np).eval()
+
+    res = linear_cublas(w, x).to('cpu').data.reshape(N,M).T
+    res_np = w_np@x_np
+
+    np.testing.assert_allclose(res, res_np)
 
 if __name__ == "__main__":
+    M, K, N = 4, 3, 50
     test_speedup(B, M, N, K, i_dtype)
-    test_cublas()
+    test_cublas(M, K, N)
