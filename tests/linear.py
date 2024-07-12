@@ -68,7 +68,25 @@ def test_cublas(M, K, N):
 
     np.testing.assert_allclose(res, res_np)
 
+def test_cublas_torch(M, N, K):
+    i_dtype = torch.float32
+    torch.manual_seed(0)
+
+    w = torch.randn(M, K, requires_grad=False, device="cuda", dtype=i_dtype)
+    x = torch.randn(K, N, requires_grad=False, device="cuda", dtype=i_dtype)
+
+    w_t = Tensor.from_np(w.cpu().numpy()).eval()
+    x_t = Tensor.from_np(x.cpu().numpy()).eval()
+
+    res_tf = torch.nn.functional.linear(w.squeeze(), x.T)
+    res_t = torch.matmul(w, x)
+    res_cb = linear_cublas(w_t, x_t).to('cpu').data.reshape(N, M).T
+
+    torch.testing.assert_close(torch.from_numpy(res_cb).to("cuda"), res_t.squeeze())
+    torch.testing.assert_close(torch.from_numpy(res_cb).to("cuda"), res_tf.squeeze())
+
 if __name__ == "__main__":
     M, K, N = 4, 3, 50
     test_speedup(B, M, N, K, i_dtype)
     test_cublas(M, K, N)
+    test_cublas_torch(M, K, N)

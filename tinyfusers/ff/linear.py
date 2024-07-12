@@ -36,7 +36,7 @@ def linear_cublas(weight, x):
   _, n = x.shape[0], x.shape[1] # (k, n)
   
   lda, ldb, ldc = k, n, m
-  res = Tensor.zeros((m*n), dtype = np.float32).eval() #(m,n)
+  res = Tensor.zeros((m*n), dtype = np.float32).eval() #(m,n). This incurs unecessary cost!
 
   d_x = x.dt_ptr
   d_w = weight.dt_ptr
