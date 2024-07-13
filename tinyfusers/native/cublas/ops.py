@@ -1,7 +1,5 @@
 import ctypes
 
-cublasHandle_t = ctypes.c_void_p
-
 class Cublas:
     def __init__(self,):
         self.dll = ctypes.CDLL('libcublas.so.12')
@@ -9,13 +7,11 @@ class Cublas:
     def cublasCreate(self, handle):
         self.dll.cublasCreate_v2.restype = ctypes.c_int
         self.dll.cublasCreate_v2.argtypes = [ctypes.POINTER(cublasHandle_t)]
-
         return self.dll.cublasCreate_v2(ctypes.byref(handle))
     
     def cublasDestroy(self, handle):
         self.dll.cublasDestroy_v2.restype = ctypes.c_int
         self.dll.cublasDestroy_v2.argtypes = [cublasHandle_t]
-    
         return self.dll.cublasDestroy_v2(handle)
     
     def cublasSgemm(self, handle, transa, transb,  m, n, k, alpha, d_a, lda, d_b, ldb, beta, d_c, ldc):
@@ -38,7 +34,8 @@ class Cublas:
                                d_c_float_p, ldc)
     
         return status
-
+    
+cublasHandle_t = ctypes.c_void_p
 cublas = Cublas()
 cublas.CUBLAS_STATUS_SUCCESS = 0
 cublas.CUBLAS_STATUS_NOT_INITIALIZED = 1

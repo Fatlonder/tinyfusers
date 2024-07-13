@@ -2,6 +2,22 @@ import ctypes
 
 class Cuda:
     def __init__(self,):
+        self.dll = ctypes.CDLL('libcuda.so.12')
+    
+    def cuCtxCreate_v2(self, pctx, flag, device_id):
+        self.dll.cuCtxCreate_v2.restype = ctypes.c_int
+        self.dll.cuCtxCreate_v2.argtypes = [ctypes.POINTER(ctypes.POINTER(struct_CUctx_st)), ctypes.c_uint32, ctypes.c_int32]
+        status = self.dll.cuCtxCreate_v2(pctx, flag, device_id)
+        return status
+    
+    def cuModuleLoadData(self, module, data):
+        self.dll.cuModuleLoadData.restype = ctypes.c_int
+        self.dll.cuModuleLoadData.argtypes = [ctypes.POINTER(ctypes.POINTER(struct_CUmod_st)), ctypes.POINTER(None)]
+        status = self.dll.cuModuleLoadData(ctypes.byref(module), data)
+        return status
+
+class Cudart:
+    def __init__(self,):
         self.dll = ctypes.CDLL('libcudart.so.12')
 
     def cudaMalloc(self, a:ctypes.c_void_p, nbytes):
@@ -21,8 +37,30 @@ class Cuda:
         self.dll.cudaFree.argtypes = [ctypes.c_void_p]
         status = self.dll.cudaFree(devPtr)
         return status 
+    
+    def cudaDeviceGetAttribute(self, atr_ptr: ctypes.c_void_p, attr, device_id):
+        self.dll.cudaDeviceGetAttribute.restype = ctypes.c_int
+        self.dll.cudaDeviceGetAttribute.argtypes = [ctypes.POINTER(ctypes.c_int32), ctypes.c_int32, ctypes.c_int32]
+        status = self.dll.cudaDeviceGetAttribute(atr_ptr, attr, device_id)
+        return status 
      
-cudart = Cuda()
+class struct_CUmod_st(ctypes.Structure):
+    pass
+class struct_CUctx_st(ctypes.Structure):
+    pass
+
+CUmodule = ctypes.POINTER(struct_CUmod_st)
+CUcontext = ctypes.POINTER(struct_CUctx_st)
+
+cuda = Cuda()
+cudart = Cudart()
+
+cuda.CUmodule = CUmodule
+cuda.CUcontext = CUcontext
+cuda.CU_CTX_SCHED_AUTO = 0
+
 cudart.CUDA_SUCCESS = 0
 cudart.cudaMemcpyHostToDevice = 1
 cudart.cudaMemcpyDeviceToHost = 2
+cudart.cudaDevAttrComputeCapabilityMajor = 75
+cudart.cudaDevAttrComputeCapabilityMinor = 76

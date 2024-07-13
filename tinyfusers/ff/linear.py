@@ -22,7 +22,7 @@ def linear(X_gpu, W_gpu, B_gpu):
     graph.execute({X: X_gpu, W: W_gpu, B: B_gpu, Y: Y_actual}, workspace, handle=handle)
     return Y_actual
 
-def linear_cublas(weight, x):
+def linear_cublas(weight, x, bias):
   handle = cublas.cublasHandle_t()
   status = cublas.cublasCreate(handle)
   if status != 0:
@@ -41,6 +41,7 @@ def linear_cublas(weight, x):
   d_x = x.dt_ptr
   d_w = weight.dt_ptr
   d_res = res.dt_ptr
+  d_bias = bias.dt_ptr if bias is not None else None
 
   status = cublas.cublasSgemm(handle, t_op_a, t_op_b,  m, n, k, alpha, 
                                 d_w, lda, 
@@ -48,6 +49,8 @@ def linear_cublas(weight, x):
                                 d_res, ldc)
   if status != 0:
       raise RuntimeError('cublasSgemm_v2 failed with status {}'.format(status))
+  if d_bias:
+     bias.eval() # TODO Use fused op instead.
 
   cublas.cublasDestroy(handle)
   return res
@@ -58,7 +61,7 @@ class Linear:
     self.bias = cp.ones((out_features), dtype=cp.float32) if bias else None
   def __call__(self, x):
     if x.device =="cuda":
-       return linear_cublas(x.eval(), self.weight.eval()) + self.bias
+       return linear_cublas(x.eval(), self.weight.eval(), self.bias)
     weight = cp.transpose(self.weight)
     o_tf = cp.dot(x, weight) + self.bias if self.bias is not None else cp.dot(x, weight)
     return o_tf
