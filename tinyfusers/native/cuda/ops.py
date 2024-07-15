@@ -15,7 +15,23 @@ class Cuda:
         self.dll.cuModuleLoadData.argtypes = [ctypes.POINTER(ctypes.POINTER(struct_CUmod_st)), ctypes.POINTER(None)]
         status = self.dll.cuModuleLoadData(ctypes.byref(module), data)
         return status
-
+    
+    def cuModuleGetFunction(self, func, module, f_name):
+        self.dll.cuModuleGetFunction.restype = ctypes.c_int
+        self.dll.cuModuleGetFunction.argtypes = [ctypes.POINTER(ctypes.POINTER(struct_cuFunction)), ctypes.POINTER(struct_CUmod_st), ctypes.POINTER(ctypes.c_char)]
+        status = self.dll.cuModuleGetFunction(ctypes.byref(func), module, f_name)
+        return status
+    
+    def cuLaunchKernel(self, func_p, grid_x, grid_y, grid_z, block_x, block_y, block_z, sharedMemBytes, hStream, kernelParams, extra):
+        self.dll.cuLaunchKernel.restype = ctypes.c_int
+        self.dll.cuLaunchKernel.argtypes = [ctypes.POINTER(struct_cuFunction), 
+                                    ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
+                                    ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
+                                    ctypes.c_uint32, CUstream, 
+                                    ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_void_p)]
+        status = self.dll.cuLaunchKernel(func_p, grid_x, grid_y, grid_z, block_x, block_y, block_z, sharedMemBytes, hStream, kernelParams, extra)
+        return status
+    
 class Cudart:
     def __init__(self,):
         self.dll = ctypes.CDLL('libcudart.so.12')
@@ -26,7 +42,7 @@ class Cudart:
         status = self.dll.cudaMalloc(ctypes.byref(a), ctypes.c_size_t(nbytes))
         return status
     
-    def cudaMemcpy(self, dst, src, nbytes, type):
+    def cudaMemcpy(self, dst, src, nbytes, type: int):
         self.dll.cudaMemcpy.restype = ctypes.c_int
         self.dll.cudaMemcpy.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_int]
         status = self.dll.cudaMemcpy(dst, src, ctypes.c_size_t(nbytes), type)
@@ -48,15 +64,23 @@ class struct_CUmod_st(ctypes.Structure):
     pass
 class struct_CUctx_st(ctypes.Structure):
     pass
+class struct_cuFunction(ctypes.Structure):
+    pass
+class struct_CUstream_st(ctypes.Structure):
+    pass
 
 CUmodule = ctypes.POINTER(struct_CUmod_st)
 CUcontext = ctypes.POINTER(struct_CUctx_st)
+CUfunction = ctypes.POINTER(struct_cuFunction)
+CUstream = ctypes.POINTER(struct_CUstream_st)
 
 cuda = Cuda()
 cudart = Cudart()
 
 cuda.CUmodule = CUmodule
 cuda.CUcontext = CUcontext
+cuda.CUfunction = CUfunction
+cuda.CUstream = CUstream
 cuda.CU_CTX_SCHED_AUTO = 0
 
 cudart.CUDA_SUCCESS = 0
