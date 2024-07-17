@@ -3,6 +3,12 @@ import ctypes
 class Cuda:
     def __init__(self,):
         self.dll = ctypes.CDLL('libcuda.so')
+
+    def cuInit(self, handler):
+        self.dll.cuInit.restype = ctypes.c_int
+        self.dll.cuInit.argtypes = [ctypes.c_uint32]
+        status = self.dll.cuInit(handler)
+        return status        
     
     def cuCtxCreate_v2(self, pctx, flag, device_id):
         self.dll.cuCtxCreate_v2.restype = ctypes.c_int
@@ -73,6 +79,7 @@ CUmodule = ctypes.POINTER(struct_CUmod_st)
 CUcontext = ctypes.POINTER(struct_CUctx_st)
 CUfunction = ctypes.POINTER(struct_cuFunction)
 CUstream = ctypes.POINTER(struct_CUstream_st)
+handler_t = ctypes.c_uint32
 
 cuda = Cuda()
 cudart = Cudart()
@@ -81,6 +88,7 @@ cuda.CUmodule = CUmodule
 cuda.CUcontext = CUcontext
 cuda.CUfunction = CUfunction
 cuda.CUstream = CUstream
+cuda.handler = handler_t
 cuda.CU_CTX_SCHED_AUTO = 0
 
 cudart.CUDA_SUCCESS = 0
