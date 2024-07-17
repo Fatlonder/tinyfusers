@@ -2,7 +2,7 @@ import ctypes
 
 class Cuda:
     def __init__(self,):
-        self.dll = ctypes.CDLL('libcuda.so.12')
+        self.dll = ctypes.CDLL('libcuda.so')
     
     def cuCtxCreate_v2(self, pctx, flag, device_id):
         self.dll.cuCtxCreate_v2.restype = ctypes.c_int
@@ -28,13 +28,13 @@ class Cuda:
                                     ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
                                     ctypes.c_uint32, ctypes.c_uint32, ctypes.c_uint32, 
                                     ctypes.c_uint32, CUstream, 
-                                    ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_void_p)]
+                                    ctypes.POINTER(ctypes.POINTER(None)), ctypes.POINTER(ctypes.POINTER(None))]
         status = self.dll.cuLaunchKernel(func_p, grid_x, grid_y, grid_z, block_x, block_y, block_z, sharedMemBytes, hStream, kernelParams, extra)
         return status
     
 class Cudart:
     def __init__(self,):
-        self.dll = ctypes.CDLL('libcudart.so.12')
+        self.dll = ctypes.CDLL('libcudart.so')
 
     def cudaMalloc(self, a:ctypes.c_void_p, nbytes):
         self.dll.cudaMalloc.restype = ctypes.c_int

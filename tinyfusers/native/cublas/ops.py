@@ -2,7 +2,7 @@ import ctypes
 
 class Cublas:
     def __init__(self,):
-        self.dll = ctypes.CDLL('libcublas.so.12')
+        self.dll = ctypes.CDLL('libcublas.so')
 
     def cublasCreate(self, handle):
         self.dll.cublasCreate_v2.restype = ctypes.c_int
