@@ -28,7 +28,7 @@ out = np.zeros(C).astype(np.float32)
 
 device_id = 0
 cntx = cuda.CUcontext()
-handler = cuda.handler_t()
+handler = cuda.handler()
 module  = cuda.CUmodule()
 stream = cuda.CUstream()
 add_vector = cuda.CUfunction()

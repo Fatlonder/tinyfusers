@@ -66,3 +66,4 @@ nvrtc.NVRTC_ERROR_NAME_EXPRESSION_NOT_VALID = 10
 nvrtc.NVRTC_ERROR_INTERNAL_ERROR = 11
 nvrtc.NVRTC_ERROR_TIME_FILE_WRITE_FAILED = 12
 nvrtc.nvrtcProgram = nvrtcProgram
+nvrtc.nvrtcResult = ctypes.c_uint32

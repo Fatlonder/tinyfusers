@@ -74,13 +74,15 @@ def test_cublas_torch(M, N, K):
 
     w = torch.randn(M, K, requires_grad=False, device="cuda", dtype=i_dtype)
     x = torch.randn(K, N, requires_grad=False, device="cuda", dtype=i_dtype)
+    bias = torch.randn(1, N, requires_grad=False, device="cuda", dtype=i_dtype)
 
     w_t = Tensor.from_np(w.cpu().numpy()).eval()
     x_t = Tensor.from_np(x.cpu().numpy()).eval()
+    bias_t = Tensor.from_np(bias.cpu().numpy()).eval()
 
-    res_tf = torch.nn.functional.linear(w.squeeze(), x.T)
-    res_t = torch.matmul(w, x)
-    res_cb = linear_cublas(w_t, x_t).to('cpu').data.reshape(N, M).T
+    res_tf = torch.nn.functional.linear(w.squeeze(), x.T, bias=bias)
+    res_t = torch.matmul(w, x) + bias
+    res_cb = linear_cublas(w_t, x_t, bias_t).to('cpu').data.reshape(N, M).T
 
     torch.testing.assert_close(torch.from_numpy(res_cb).to("cuda"), res_t.squeeze())
     torch.testing.assert_close(torch.from_numpy(res_cb).to("cuda"), res_tf.squeeze())
