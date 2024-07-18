@@ -13,11 +13,9 @@ void add_bias(float* out, const float* bias, int BT, int OC) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < BT * OC){
       int col = idx % OC;
-      int i = (threadIdx.x * 4 + blockIdx.x) % (BT * OC);
-      out[i] += bias[col];
+      out[((idx % OC) * BT) + idx/OC] += bias[col];
     }
 }'''
-
 
 def linear(X_gpu, W_gpu, B_gpu):  
     handle = cudnn.create_handle()  
@@ -115,8 +113,8 @@ def linear_cublas(weight, x, bias):
   block_x, block_y, block_z = 5, 1, 1
   grid_x, grid_y, grid_z = math.ceil(m*n/ float(block_x)), 1, 1
   kernelArgs = [ctypes.addressof(d_res), ctypes.addressof(bias.dt_ptr), 
-                ctypes.cast(ctypes.pointer(ctypes.c_uint32(bias.shape[0])), ctypes.c_void_p), 
-                ctypes.cast(ctypes.pointer(ctypes.c_uint32(bias.shape[1])), ctypes.c_void_p)]
+                ctypes.cast(ctypes.pointer(ctypes.c_uint32(m)), ctypes.c_void_p), 
+                ctypes.cast(ctypes.pointer(ctypes.c_uint32(n)), ctypes.c_void_p)]
   c_array = (ctypes.c_void_p * len(kernelArgs))(*kernelArgs)
   status = cuda.cuLaunchKernel(add_bias_fnc, grid_x, grid_y, grid_z,    # grid dim
                                       block_x, block_y, block_z, # block dim
