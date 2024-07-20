@@ -85,43 +85,43 @@ def linear_cublas(weight, x, bias):
     if status != 0:
       raise RuntimeError(f"nvrtcCreateProgram failed with status {status}")
     
-  status = nvrtc.nvrtcCompileProgram(prog, compile_options)
-  if status != 0:
-    raise RuntimeError(f"nvrtcCompileProgram failed with status {status}")
-  
-  if use_cubin:
-    nvrtc.nvrtcGetCUBINSize(prog, (dataSize := ctypes.c_ulong()))
-    data = b' ' * dataSize.value
-    status = nvrtc.nvrtcGetCUBIN(prog, data)
+    status = nvrtc.nvrtcCompileProgram(prog, compile_options)
     if status != 0:
-      raise RuntimeError(f"nvrtcGetCUBIN failed with status {status}")
-  else:
-      dataSize = nvrtc.nvrtcGetPTXSize(prog)
-      data = b' ' * dataSize
-      status = nvrtc.nvrtcGetPTX(prog, data)
+      raise RuntimeError(f"nvrtcCompileProgram failed with status {status}")
+    
+    if use_cubin:
+      nvrtc.nvrtcGetCUBINSize(prog, (dataSize := ctypes.c_ulong()))
+      data = b' ' * dataSize.value
+      status = nvrtc.nvrtcGetCUBIN(prog, data)
       if status != 0:
-        raise RuntimeError(f"nvrtcGetPTX failed with status {status}")
-      
-  status = cuda.cuModuleLoadData(module := cuda.CUmodule(), data)
-  if status != 0:
-    raise RuntimeError(f"cuModuleLoadData failed with status {status}")
+        raise RuntimeError(f"nvrtcGetCUBIN failed with status {status}")
+    else:
+        dataSize = nvrtc.nvrtcGetPTXSize(prog)
+        data = b' ' * dataSize
+        status = nvrtc.nvrtcGetPTX(prog, data)
+        if status != 0:
+          raise RuntimeError(f"nvrtcGetPTX failed with status {status}")
+        
+    status = cuda.cuModuleLoadData(module := cuda.CUmodule(), data)
+    if status != 0:
+      raise RuntimeError(f"cuModuleLoadData failed with status {status}")
 
-  status  = cuda.cuModuleGetFunction(add_bias_fnc := cuda.CUfunction(), module, b"add_bias")
-  if status != 0:
-    raise RuntimeError(f"cuModuleGetFunction failed with status {status}")
+    status  = cuda.cuModuleGetFunction(add_bias_fnc := cuda.CUfunction(), module, b"add_bias")
+    if status != 0:
+      raise RuntimeError(f"cuModuleGetFunction failed with status {status}")
 
-  block_x, block_y, block_z = 5, 1, 1
-  grid_x, grid_y, grid_z = math.ceil(m*n/ float(block_x)), 1, 1
-  kernelArgs = [ctypes.addressof(d_res), ctypes.addressof(bias.dt_ptr), 
-                ctypes.cast(ctypes.pointer(ctypes.c_uint32(m)), ctypes.c_void_p), 
-                ctypes.cast(ctypes.pointer(ctypes.c_uint32(n)), ctypes.c_void_p)]
-  c_array = (ctypes.c_void_p * len(kernelArgs))(*kernelArgs)
-  status = cuda.cuLaunchKernel(add_bias_fnc, grid_x, grid_y, grid_z,    # grid dim
-                                      block_x, block_y, block_z, # block dim
-                                      0, stream := cuda.CUstream(),                 # shared mem and stream
-                                      c_array, None)
-  if status != 0:
-    raise RuntimeError(f"cuLaunchKernel failed with status {status}")
+    block_x, block_y, block_z = 5, 1, 1
+    grid_x, grid_y, grid_z = math.ceil(m*n/ float(block_x)), 1, 1
+    kernelArgs = [ctypes.addressof(d_res), ctypes.addressof(bias.dt_ptr), 
+                  ctypes.cast(ctypes.pointer(ctypes.c_uint32(m)), ctypes.c_void_p), 
+                  ctypes.cast(ctypes.pointer(ctypes.c_uint32(n)), ctypes.c_void_p)]
+    c_array = (ctypes.c_void_p * len(kernelArgs))(*kernelArgs)
+    status = cuda.cuLaunchKernel(add_bias_fnc, grid_x, grid_y, grid_z,    # grid dim
+                                        block_x, block_y, block_z, # block dim
+                                        0, stream := cuda.CUstream(),                 # shared mem and stream
+                                        c_array, None)
+    if status != 0:
+      raise RuntimeError(f"cuLaunchKernel failed with status {status}")
   
   cublas.cublasDestroy(handle)
   return res

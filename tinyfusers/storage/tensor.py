@@ -15,6 +15,7 @@ class Tensor:
         self.num_elem = math.prod(self.shape)
         self.data = data
         self.nbytes = self.num_elem * np.dtype(self.dtype).itemsize
+        self.strides = None
 
     def eval(self):
         if self.device == "cuda" and self.dt_ptr != 0:

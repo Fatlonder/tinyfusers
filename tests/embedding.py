@@ -1,22 +1,29 @@
-import cupy as cp
-from tinygrad.nn import Embedding as Emb
-from tinygrad import Tensor
-from tinyfusers.ff.embedding import Embedding
+import numpy as np
+import torch
+from torch import nn
+from tinyfusers.ff.embedding import embedding
+from tinyfusers.storage.tensor import Tensor
+
 
 def test_embedding():
-    vocab_size, embed_size = 49408, 768
-    n_dim = 77
+    vocab_size, embed_size, n_dim = 10, 7, 10
+    weight = np.random.randn(embed_size, vocab_size).astype(np.float32)
+    x_np = np.zeros(shape=(embed_size, n_dim)).astype(np.float32)
+    idx = np.random.randint(0, embed_size, size=(1, n_dim))
+    _, N  = idx.shape
 
-    embedding = Embedding(vocab_size, embed_size)
-    embedding1 = Emb(vocab_size, embed_size)
-    embedding1.weight = Tensor(cp.asnumpy(embedding.weight), device="cuda")
+    emb  = nn.Embedding(vocab_size, embed_size)
+    emb.weight = torch.nn.Parameter(torch.from_numpy(weight.T))
 
-    idx = cp.array([[1, 2], [1, 2]])
-    #idx = np.arange(n_dim, dtype=np.int16).reshape(1,n_dim)
-    t_idx = Tensor(cp.asnumpy(idx))
-    embedded = embedding(t_idx)
-    embedded1 = embedding1(t_idx)
-    cp.testing.assert_allclose(embedded, embedded1.numpy(), atol=1e-2, rtol=1e-2)
+    for j, i in zip(idx[0], range(n_dim)):
+        x_np[j][i] = 1
+
+    x = Tensor.from_np(x_np).eval()
+    w = Tensor.from_np(weight).eval()
+    o_tf = embedding(w, x, embed_size).to('cpu').data.reshape(N, embed_size)
+    o_t = emb(torch.from_numpy(idx.astype(np.int32)))
+
+    np.testing.assert_allclose(o_t[0].detach().numpy(), o_tf)
 
 if __name__ == "__main__":
     test_embedding()
