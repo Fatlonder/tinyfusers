@@ -63,7 +63,7 @@ def test_cublas(M, K, N):
     w = Tensor.from_np(w_np).eval()
     x = Tensor.from_np(x_np).eval()
 
-    res = linear_cublas(w, x).to('cpu').data.reshape(N,M).T
+    res = linear_cublas(w, x, None).to('cpu').data.reshape(N,M).T
     res_np = w_np@x_np
 
     np.testing.assert_allclose(res, res_np)

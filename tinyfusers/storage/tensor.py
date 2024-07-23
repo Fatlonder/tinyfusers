@@ -19,7 +19,7 @@ class Tensor:
 
     def eval(self):
         if self.device == "cuda" and self.dt_ptr != 0:
-            status = cudart.cudaMalloc(self.dt_ptr, self.num_elem * self.nbytes)
+            status = cudart.cudaMalloc(self.dt_ptr, self.nbytes)
             if status != cudart.CUDA_SUCCESS:
                 raise RuntimeError('cudaMalloc failed with status {}'.format(status))
             if self.data is not None:
