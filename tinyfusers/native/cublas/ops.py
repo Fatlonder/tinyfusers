@@ -35,6 +35,24 @@ class Cublas:
     
         return status
     
+    def cublasSgemmBatched(self, handle, transa, transb,  m, n, k, alpha, d_a, lda, d_b, ldb, beta, d_c, ldc, batchCount):
+        self.dll.cublasSgemmBatched.restype = ctypes.c_int
+        self.dll.cublasSgemmBatched.argtypes = [cublasHandle_t, ctypes.c_uint, ctypes.c_uint, 
+                                  ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, 
+                                  ctypes.POINTER(ctypes.c_float), 
+                                  ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32, 
+                                  ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32, 
+                                  ctypes.POINTER(ctypes.c_float), 
+                                  ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32,
+                                  ctypes.c_int32]
+        status = self.dll.cublasSgemmBatched(handle, transa, transb,  m, n, k, 
+                               ctypes.byref(ctypes.c_float(alpha)), 
+                               d_a, lda, 
+                               d_b, ldb, 
+                               ctypes.byref(ctypes.c_float(beta)), 
+                               d_c, ldc, batchCount)
+        return status
+    
 cublasHandle_t = ctypes.c_void_p
 cublas = Cublas()
 cublas.CUBLAS_STATUS_SUCCESS = 0
