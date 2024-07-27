@@ -1,10 +1,12 @@
 from time import monotonic
+import ctypes
 import torch
 import cupy as cp
 import numpy as np
 from tinygrad import Tensor
-from tinyfusers.ff.linear import linear, linear_cublas
+from tinyfusers.ff.linear import linear, linear_cublas, gemm_batch
 from tinyfusers.storage.tensor import Tensor
+from tinyfusers.native import cudart
 
 B, M, N, K, i_dtype = 1, 10000, 20000, 1000, torch.float16
 embedding_dim_options = [768, 1024, 1280, 1600]
@@ -87,8 +89,28 @@ def test_cublas_torch(M, N, K):
     torch.testing.assert_close(torch.from_numpy(res_cb).to("cuda"), res_t.squeeze())
     torch.testing.assert_close(torch.from_numpy(res_cb).to("cuda"), res_tf.squeeze())
 
+def test_cublas_batch(B, M, N, K):
+
+    A_np = np.random.randint(low=0, high=K, size=(B, M, K)).astype(np.float32)
+    B_np = np.random.randint(low=0, high=K, size=(B, K, N)).astype(np.float32)
+    C_np = np.zeros((B, M, N)).astype(np.float32)
+
+    w_tensor = Tensor.from_np(A_np)
+    x_tensor = Tensor.from_np(B_np)
+    c_gpu = gemm_batch(w_tensor, x_tensor)
+
+    for i in range(B):
+        status = cudart.cudaMemcpy(C_np[i].ctypes.data_as(ctypes.POINTER(ctypes.c_float)), ctypes.cast(c_gpu[i], ctypes.POINTER(ctypes.c_float)), M * N * np.dtype(np.float32).itemsize, cudart.cudaMemcpyDeviceToHost)
+        if status != 0:
+            raise RuntimeError(f"cudaMemcpy failed with status {status}")
+        
+    C_py = A_np@B_np
+    C_np = np.transpose(C_np.reshape(B, N, M), axes=(0,2,1))
+    np.testing.assert_allclose(C_np, C_py, atol=1e-2, rtol=1e-2)
+
 if __name__ == "__main__":
-    M, K, N = 4, 3, 50
+    B, M, K, N = 500, 4, 3, 50
     test_speedup(B, M, N, K, i_dtype)
     test_cublas(M, K, N)
     test_cublas_torch(M, K, N)
+    test_cublas_batch(B, M, K, N)

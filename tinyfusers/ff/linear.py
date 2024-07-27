@@ -17,8 +17,9 @@ void add_bias(float* out, const float* bias, int BT, int OC) {
     }
 }'''
 
-def gemm_batch(X, W):
-    B, M, K, N = X.shape
+def gemm_batch(W, X):
+    B, M, K = W.shape
+    N = X.shape[2]
     status = cublas.cublasCreate(handle := cublas.cublasHandle_t())
     if status != 0:
       raise RuntimeError(f"cublasCreate_v2 failed with status {status}")
@@ -51,8 +52,8 @@ def gemm_batch(X, W):
     d_C_array = ctypes.cast(d_C_array, ctypes.POINTER(ctypes.POINTER(ctypes.c_float)))
 
     for i in range(B):
-      status_a = cudart.cudaMemcpy(A_gpu[i], X[i].data.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), M * K * np.dtype(np.float32).itemsize, cudart.cudaMemcpyHostToDevice)
-      status_b = cudart.cudaMemcpy(B_gpu[i], W[i].data.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), K * N * np.dtype(np.float32).itemsize, cudart.cudaMemcpyHostToDevice)
+      status_a = cudart.cudaMemcpy(A_gpu[i], W.data[i].ctypes.data_as(ctypes.POINTER(ctypes.c_float)), M * K * np.dtype(np.float32).itemsize, cudart.cudaMemcpyHostToDevice)
+      status_b = cudart.cudaMemcpy(B_gpu[i], X.data[i].ctypes.data_as(ctypes.POINTER(ctypes.c_float)), K * N * np.dtype(np.float32).itemsize, cudart.cudaMemcpyHostToDevice)
       if (status_a or status_b) != 0:
         raise RuntimeError(f"cudaMemcpy failed with status {status}")
       
