@@ -75,3 +75,5 @@ def scaled_dot_product_attention(q_cp, k_cp, v_cp, attn_mask=None):
     att = cp.reshape(att, (B, NH, T_q, T_k))
     o_tg = cp.matmul(att, v_cp)
     return o_tg
+def sdpa(q_, k_, v_):
+    print()
