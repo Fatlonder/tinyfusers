@@ -84,3 +84,6 @@ class Tensor:
     @staticmethod
     def swish(x):
         return x * Tensor.sigmoid(x)
+    
+    def __add__(self, other):
+        raise RuntimeError(f"Tensor.__add__ not implemented")
