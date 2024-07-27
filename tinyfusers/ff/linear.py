@@ -17,6 +17,63 @@ void add_bias(float* out, const float* bias, int BT, int OC) {
     }
 }'''
 
+def gemm_batch(X, W):
+    B, M, K, N = X.shape
+    status = cublas.cublasCreate(handle := cublas.cublasHandle_t())
+    if status != 0:
+      raise RuntimeError(f"cublasCreate_v2 failed with status {status}")
+
+    A_gpu = (ctypes.POINTER(ctypes.c_float) * B)()
+    B_gpu = (ctypes.POINTER(ctypes.c_float) * B)()
+    C_gpu = (ctypes.POINTER(ctypes.c_float) * B)()
+
+    for i in range(B):
+      status_a = cudart.cudaMalloc(dd := ctypes.c_void_p(), M * K * np.dtype(np.float32).itemsize)
+      A_gpu[i] = ctypes.cast(dd, ctypes.POINTER(ctypes.c_float))
+
+      status_b = cudart.cudaMalloc(ff := ctypes.c_void_p(), K * N * np.dtype(np.float32).itemsize)
+      B_gpu[i] = ctypes.cast(ff, ctypes.POINTER(ctypes.c_float))
+
+      status_c = cudart.cudaMalloc(zz := ctypes.c_void_p(), M * N * np.dtype(np.float32).itemsize)
+      C_gpu[i] = ctypes.cast(zz, ctypes.POINTER(ctypes.c_float))
+
+      if (status_a or status_b or status_c) != 0:
+        raise RuntimeError(f"cudaMalloc failed with status {status}")
+
+    status_a = cudart.cudaMalloc(d_A_array := ctypes.c_void_p(), 2 * B * np.dtype(np.float32).itemsize)
+    status_b = cudart.cudaMalloc(d_B_array := ctypes.c_void_p(), 2 * B * np.dtype(np.float32).itemsize)
+    status_c = cudart.cudaMalloc(d_C_array := ctypes.c_void_p(), 2 * B * np.dtype(np.float32).itemsize)
+    if (status_a or status_b or status_c) != 0:
+        raise RuntimeError(f"cudaMalloc failed with status {status}")
+    
+    d_A_array = ctypes.cast(d_A_array, ctypes.POINTER(ctypes.POINTER(ctypes.c_float)))
+    d_B_array = ctypes.cast(d_B_array, ctypes.POINTER(ctypes.POINTER(ctypes.c_float)))
+    d_C_array = ctypes.cast(d_C_array, ctypes.POINTER(ctypes.POINTER(ctypes.c_float)))
+
+    for i in range(B):
+      status_a = cudart.cudaMemcpy(A_gpu[i], X[i].data.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), M * K * np.dtype(np.float32).itemsize, cudart.cudaMemcpyHostToDevice)
+      status_b = cudart.cudaMemcpy(B_gpu[i], W[i].data.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), K * N * np.dtype(np.float32).itemsize, cudart.cudaMemcpyHostToDevice)
+      if (status_a or status_b) != 0:
+        raise RuntimeError(f"cudaMemcpy failed with status {status}")
+      
+    status_a = cudart.cudaMemcpy(d_A_array, A_gpu, 2 * B * np.dtype(np.float32).itemsize, cudart.cudaMemcpyHostToDevice)
+    status_b = cudart.cudaMemcpy(d_B_array, B_gpu, 2 * B * np.dtype(np.float32).itemsize, cudart.cudaMemcpyHostToDevice)
+    status_c = cudart.cudaMemcpy(d_C_array, C_gpu, 2 * B * np.dtype(np.float32).itemsize, cudart.cudaMemcpyHostToDevice)
+    if (status_a or status_b or status_c) != 0:
+        raise RuntimeError(f"cudaMemcpy failed with status {status}")
+
+    t_op_a = cublas.CUBLAS_OP_T
+    t_op_b = cublas.CUBLAS_OP_T
+    alpha, beta = 1.0, 0.0
+    lda, ldb, ldc = K, N, M
+    status = cublas.cublasSgemmBatched(handle, t_op_a, t_op_b,  M, N, K, alpha, 
+                                  d_A_array, lda, 
+                                  d_B_array, ldb, beta, 
+                                  d_C_array, ldc, B)
+    if status != 0:
+        raise RuntimeError(f"cublasSgemmBatched failed with status {status}")
+    return C_gpu
+
 def linear(X_gpu, W_gpu, B_gpu):  
     handle = cudnn.create_handle()  
     graph = cudnn.pygraph(intermediate_data_type=cudnn.data_type.FLOAT, compute_data_type=cudnn.data_type.FLOAT,handle=handle,)
@@ -34,8 +91,7 @@ def linear(X_gpu, W_gpu, B_gpu):
     return Y_actual
 
 def linear_cublas(weight, x, bias):
-  handle = cublas.cublasHandle_t()
-  status = cublas.cublasCreate(handle)
+  status = cublas.cublasCreate(handle := cublas.cublasHandle_t())
   if status != 0:
     raise RuntimeError('cublasCreate_v2 failed with status {}'.format(status))
   

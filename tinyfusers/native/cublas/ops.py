@@ -3,18 +3,10 @@ import ctypes
 class Cublas:
     def __init__(self,):
         self.dll = ctypes.CDLL('libcublas.so')
-
-    def cublasCreate(self, handle):
         self.dll.cublasCreate_v2.restype = ctypes.c_int
         self.dll.cublasCreate_v2.argtypes = [ctypes.POINTER(cublasHandle_t)]
-        return self.dll.cublasCreate_v2(ctypes.byref(handle))
-    
-    def cublasDestroy(self, handle):
         self.dll.cublasDestroy_v2.restype = ctypes.c_int
         self.dll.cublasDestroy_v2.argtypes = [cublasHandle_t]
-        return self.dll.cublasDestroy_v2(handle)
-    
-    def cublasSgemm(self, handle, transa, transb,  m, n, k, alpha, d_a, lda, d_b, ldb, beta, d_c, ldc):
         self.dll.cublasSgemm_v2.restype = ctypes.c_int
         self.dll.cublasSgemm_v2.argtypes = [cublasHandle_t, ctypes.c_uint, ctypes.c_uint, 
                                   ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, 
@@ -23,6 +15,22 @@ class Cublas:
                                   ctypes.POINTER(ctypes.c_float), ctypes.c_int32, 
                                   ctypes.POINTER(ctypes.c_float), 
                                   ctypes.POINTER(ctypes.c_float), ctypes.c_int32]
+        self.dll.cublasSgemmBatched.restype = ctypes.c_int
+        self.dll.cublasSgemmBatched.argtypes = [cublasHandle_t, ctypes.c_uint, ctypes.c_uint, 
+                                  ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, 
+                                  ctypes.POINTER(ctypes.c_float), 
+                                  ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32, 
+                                  ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32, 
+                                  ctypes.POINTER(ctypes.c_float), 
+                                  ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32,
+                                  ctypes.c_int32]
+    def cublasCreate(self, handle):
+        return self.dll.cublasCreate_v2(ctypes.byref(handle))
+    
+    def cublasDestroy(self, handle):
+        return self.dll.cublasDestroy_v2(handle)
+    
+    def cublasSgemm(self, handle, transa, transb,  m, n, k, alpha, d_a, lda, d_b, ldb, beta, d_c, ldc):
         d_a_float_p = ctypes.cast(d_a, ctypes.POINTER(ctypes.c_float))
         d_b_float_p = ctypes.cast(d_b, ctypes.POINTER(ctypes.c_float))
         d_c_float_p = ctypes.cast(d_c, ctypes.POINTER(ctypes.c_float))
@@ -36,15 +44,6 @@ class Cublas:
         return status
     
     def cublasSgemmBatched(self, handle, transa, transb,  m, n, k, alpha, d_a, lda, d_b, ldb, beta, d_c, ldc, batchCount):
-        self.dll.cublasSgemmBatched.restype = ctypes.c_int
-        self.dll.cublasSgemmBatched.argtypes = [cublasHandle_t, ctypes.c_uint, ctypes.c_uint, 
-                                  ctypes.c_int32, ctypes.c_int32, ctypes.c_int32, 
-                                  ctypes.POINTER(ctypes.c_float), 
-                                  ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32, 
-                                  ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32, 
-                                  ctypes.POINTER(ctypes.c_float), 
-                                  ctypes.POINTER(ctypes.POINTER(ctypes.c_float)), ctypes.c_int32,
-                                  ctypes.c_int32]
         status = self.dll.cublasSgemmBatched(handle, transa, transb,  m, n, k, 
                                ctypes.byref(ctypes.c_float(alpha)), 
                                d_a, lda, 
