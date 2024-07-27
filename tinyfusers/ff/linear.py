@@ -2,7 +2,7 @@ import ctypes
 import numpy as np
 import cudnn
 import cupy as cp
-from ..native import cuda, cudart, nvrtc, cublas
+from ..native import cuda, cudart, cublas
 from ..storage.tensor import Tensor
 
 def gemm_batch(W, X):
@@ -104,7 +104,7 @@ def linear_cublas(weight, x, bias):
   
   if d_bias: # TODO Use fused op instead.
     bias.eval() 
-    bias.device.add_bias(res.dt_ptr, bias.dt_ptr)
+    bias.device.add_bias(res.dt_ptr, bias.dt_ptr, m, n)
   
   cublas.cublasDestroy(handle)
   return res

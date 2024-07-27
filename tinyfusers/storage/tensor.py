@@ -7,7 +7,7 @@ from .device import Device
 from ..native.cuda.ops import cudart
 
 class Tensor:
-    def __init__(self, shape:tuple, dtype = np.float32, device: Device = "cuda", data: np.array = None):
+    def __init__(self, shape:tuple, dtype = np.float32, device: Device = None, data: np.array = None):
         self.device = device if device else Tensor.default_device()
         self.dt_ptr = ctypes.c_void_p()
         self.shape = shape if data is None else data.shape
@@ -18,7 +18,7 @@ class Tensor:
         self.strides = None
 
     def eval(self):
-        if self.device == "cuda" and self.dt_ptr != 0:
+        if str(self.device) == "cuda" and self.dt_ptr != 0:
             status = cudart.cudaMalloc(self.dt_ptr, self.nbytes)
             if status != cudart.CUDA_SUCCESS:
                 raise RuntimeError('cudaMalloc failed with status {}'.format(status))
@@ -51,7 +51,7 @@ class Tensor:
     
     @staticmethod
     def from_np(data: np.array):
-        return Tensor(data.shape, data.dtype, device="cuda", data=data)
+        return Tensor(data.shape, data.dtype, device=None, data=data)
     
     @staticmethod
     def zeros(shape, dtype):

@@ -25,7 +25,7 @@ class Device:
         return 0
 
     def __str__(self):
-        return self.device
+        return str(self.device)
     
     def load_func(self, code_str, func_name):
         device_id = 0 
