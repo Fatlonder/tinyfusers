@@ -126,3 +126,34 @@ class Device:
             raise RuntimeError(f"cuLaunchKernel failed with status {status}")
         
         return x_ptr
+    
+    def softmax(self, out_tensor, inp_tensor):
+        B, T, NH, _ = inp_tensor.shape
+        OC = out_tensor.shape
+
+        if "softmax_kernel" in self.func_lib:
+            softmax_tensor_fnc = self.func_lib["softmax_kernel"]
+        else:
+            cuda_kernel_file = os.path.join(self.cuda_kernel_dir, 'softmax_func.cu')
+            def read_file_content(code_filename):
+                with open(code_filename, 'r') as f: return f.read()
+            softmax_tensor_fnc = self.load_func(read_file_content(cuda_kernel_file), "softmax_kernel")
+            self.func_lib["softmax_kernel"] = softmax_tensor_fnc
+        
+        block_x, block_y, block_z = 256, 1, 1
+        grid_x, grid_y, grid_z = math.ceil(B * T / float(block_x)), 1, 1
+        shared_mem_size = int(2 * block_x / 32 * 4)# 32 * sizeof(float) 
+
+        kernelArgs = [ctypes.addressof(out_tensor.dt_ptr), ctypes.addressof(inp_tensor.dt_ptr), 
+                    ctypes.cast(ctypes.pointer(ctypes.c_uint32(B * NH * T)), ctypes.c_void_p),
+                    ctypes.cast(ctypes.pointer(ctypes.c_uint32(OC)), ctypes.c_void_p)]            
+        c_args = (ctypes.c_void_p * len(kernelArgs))(*kernelArgs)
+
+        status = cuda.cuLaunchKernel(softmax_tensor_fnc, grid_x, grid_y, grid_z,                # grid dim
+                                            block_x, block_y, block_z,                          # block dim
+                                            shared_mem_size, stream := cuda.CUstream(),         # shared mem and stream
+                                            c_args, None)
+        if status != 0:
+            raise RuntimeError(f"cuLaunchKernel failed with status {status}")
+        
+        return out_tensor

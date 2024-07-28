@@ -1,26 +1,25 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <float.h>
-#include <cublas_v2.h>
-#include <cuda_runtime.h>
-#include <cooperative_groups.h>
-#include <cooperative_groups/reduce.h>
-#include "utils.h"
+#include "math_functions.h"
+#include "math_constants.h"
 
-extern "C"{
-__global__ void scale_kernel(float* inp, float scale, int B, int NH, int T) {
-    // scales the pre-softmax attention scores by scale
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < B * NH * T * T) {
-        int rest = idx % (NH * T * T);
-        rest = rest % (T * T);
-        int t2 = rest / T;
-        int t = rest % T;
-        inp[idx] *= scale;
-    }
+__host__ __device__ float ceil_div(float dividend, float divisor) {
+    return (dividend + divisor-1) / divisor;
 }
 
+__device__ float warpReduceSum(float val) {
+    for (int offset = 16; offset > 0; offset /= 2) {
+        val += __shfl_xor_sync(0xFFFFFFFF, val, offset);
+    }
+    return val;
+}
+
+__device__ float warpReduceMax(float val) {
+    for (int offset = 16; offset > 0; offset /= 2) {
+        val = fmaxf(val, __shfl_down_sync(0xFFFFFFFF, val, offset));
+    }
+    return val;
+}
+
+extern "C"
 __global__ void softmax_kernel(float* out, const float* inp, int N, int C) {
     // out is (N, C) just like inp. Each row of inp will get softmaxed.
     // same as kernel3, but can handle any block size (multiple of 32)
@@ -47,7 +46,8 @@ __global__ void softmax_kernel(float* out, const float* inp, int N, int C) {
     const float* x = inp + idx * C;
 
     // first, thread coarsening by directly accessing global memory in series
-    float maxval = -INFINITY;
+    //float maxval = -INFINITY;
+    float maxval = CUDART_INF_F;    
     for (int i = tid; i < C; i += blockDim.x) {
         maxval = fmaxf(maxval, x[i]);
     }
@@ -68,6 +68,7 @@ __global__ void softmax_kernel(float* out, const float* inp, int N, int C) {
         maxvals[0] = val;
     }
     __syncthreads();
+
     // broadcast the max to all threads
     float offset = maxvals[0];
 
@@ -102,6 +103,7 @@ __global__ void softmax_kernel(float* out, const float* inp, int N, int C) {
         sumvals[0] = val;
     }
     __syncthreads();
+
     // broadcast the sum to all threads
     float sum = sumvals[0];
 
@@ -109,5 +111,4 @@ __global__ void softmax_kernel(float* out, const float* inp, int N, int C) {
     for (int i = tid; i < C; i += blockDim.x) {
         out[idx * C + i] = x[i] / sum;
     }
-}
-}
+  }
