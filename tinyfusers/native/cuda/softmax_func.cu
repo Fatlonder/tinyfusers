@@ -1,4 +1,3 @@
-#include "math_functions.h"
 #include "math_constants.h"
 
 __host__ __device__ float ceil_div(float dividend, float divisor) {
@@ -47,7 +46,7 @@ __global__ void softmax_kernel(float* out, const float* inp, int N, int C) {
 
     // first, thread coarsening by directly accessing global memory in series
     //float maxval = -INFINITY;
-    float maxval = CUDART_INF_F;    
+    float maxval = -CUDART_INF_F;    
     for (int i = tid; i < C; i += blockDim.x) {
         maxval = fmaxf(maxval, x[i]);
     }

@@ -128,8 +128,7 @@ class Device:
         return x_ptr
     
     def softmax(self, out_tensor, inp_tensor):
-        B, T, NH, _ = inp_tensor.shape
-        OC = out_tensor.shape
+        N, OC = inp_tensor.shape
 
         if "softmax_kernel" in self.func_lib:
             softmax_tensor_fnc = self.func_lib["softmax_kernel"]
@@ -141,11 +140,11 @@ class Device:
             self.func_lib["softmax_kernel"] = softmax_tensor_fnc
         
         block_x, block_y, block_z = 256, 1, 1
-        grid_x, grid_y, grid_z = math.ceil(B * T / float(block_x)), 1, 1
+        grid_x, grid_y, grid_z = N, 1, 1
         shared_mem_size = int(2 * block_x / 32 * 4)# 32 * sizeof(float) 
 
         kernelArgs = [ctypes.addressof(out_tensor.dt_ptr), ctypes.addressof(inp_tensor.dt_ptr), 
-                    ctypes.cast(ctypes.pointer(ctypes.c_uint32(B * NH * T)), ctypes.c_void_p),
+                    ctypes.cast(ctypes.pointer(ctypes.c_uint32(N)), ctypes.c_void_p),
                     ctypes.cast(ctypes.pointer(ctypes.c_uint32(OC)), ctypes.c_void_p)]            
         c_args = (ctypes.c_void_p * len(kernelArgs))(*kernelArgs)
 
