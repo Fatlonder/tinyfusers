@@ -112,11 +112,9 @@ class Device:
             self.func_lib["scale_kernel"] = scale_tensor_fnc
         
         block_x, block_y, block_z = 8, 8, 1
-        grid_x, grid_y, grid_z = math.ceil(B * T / float(block_x)), math.ceil(OC / float(block_y)), 1
+        grid_x, grid_y, grid_z = math.ceil(B * T * NH/ float(block_x)), math.ceil(OC / float(block_y)), 1
         kernelArgs = [ctypes.addressof(x_ptr), ctypes.cast(ctypes.pointer(ctypes.c_float(scaler)), ctypes.c_void_p),
-              ctypes.cast(ctypes.pointer(ctypes.c_uint32(B)), ctypes.c_void_p),
-              ctypes.cast(ctypes.pointer(ctypes.c_uint32(NH)), ctypes.c_void_p),
-              ctypes.cast(ctypes.pointer(ctypes.c_uint32(T)), ctypes.c_void_p)]
+              ctypes.cast(ctypes.pointer(ctypes.c_uint32(B * T * NH * OC)), ctypes.c_void_p)]
         c_args = (ctypes.c_void_p * len(kernelArgs))(*kernelArgs)
         status = cuda.cuLaunchKernel(scale_tensor_fnc, grid_x, grid_y, grid_z,    # grid dim
                                             block_x, block_y, block_z,            # block dim
