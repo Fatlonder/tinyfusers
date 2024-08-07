@@ -56,6 +56,15 @@ def test_softmax_v_cp():
 
     np.testing.assert_allclose(out_tensor.to('cpu').data, cp.asnumpy(att), atol=1e-2, rtol=1e-2)   
 
+def test_transpose_2d():
+    x_dim, y_dim = 13, 87
+    a = np.random.randn(x_dim, y_dim).astype(np.float32)
+    a_t = Tensor.from_np(a).eval()
+    out_t = Tensor.zeros((x_dim, y_dim), np.float32).eval()
+    a_t.T(out_t)
+    out_np = out_t.to('cpu').data
+    np.testing.assert_allclose(out_np, a.T, atol=1e-2, rtol=1e-2)
+    
 if __name__ == "__main__":
     B, T, OC, NH = 1, 2, 2, 2
     inp = np.random.randint(low =0 , high = 10, size=(B, NH, T, T)).astype(np.float32)
@@ -63,3 +72,4 @@ if __name__ == "__main__":
     test_scale_tensor(inp, scaler, B, T, OC, NH)
     test_softmax_v_cp()
     test_softmax(None, None)
+    test_transpose_2d()
