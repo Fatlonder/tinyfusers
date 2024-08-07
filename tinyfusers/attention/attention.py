@@ -88,8 +88,13 @@ class CLIPAttention:
   def __call__(self, hidden_states, causal_attention_mask):
     bsz, tgt_len, embed_dim = hidden_states.shape
     q,k,v = self.q_proj(hidden_states), self.k_proj(hidden_states), self.v_proj(hidden_states)
+
     q,k,v = [cp.transpose(y.reshape(bsz, tgt_len, self.num_heads, self.head_dim), axes=(0,2,1,3))for y in (q,k,v)]
+    
     att_cp = scaled_dot_product_attention(q, k, v, attn_mask=causal_attention_mask)
+    
     attn_output = cp.transpose(att_cp, axes=(0, 2, 1, 3)).reshape(bsz, tgt_len, embed_dim)
+    
     o_cp = self.out_proj(attn_output)
+    
     return o_cp
