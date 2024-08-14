@@ -88,6 +88,6 @@ class Tensor:
     def __add__(self, other):
         raise RuntimeError(f"Tensor.__add__ not implemented")
     
-    def T(self, out_tensor):
-        self.device.transpose(out_tensor, self)
-        out_tensor.data.shape = (self.shape[::-1])
+    def T(self, out_tensor, axis:tuple=(1,0)):
+        self.device.transpose(out_tensor, self, axis)
+        out_tensor.data.shape = out_tensor.shape

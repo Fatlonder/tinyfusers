@@ -64,6 +64,22 @@ def test_transpose_2d():
     a_t.T(out_t)
     out_np = out_t.to('cpu').data
     np.testing.assert_allclose(out_np, a.T, atol=1e-2, rtol=1e-2)
+
+def test_transpose_3d():
+    device = Device("cuda")
+    shape = (30, 7, 30)
+    new_shape = (1, 2, 0)
+
+    q = np.random.randint(low=0, high=10, size=shape).astype(np.float32)
+    q_out = Tensor.zeros(shape=shape, dtype=np.float32).eval()
+    q_t = Tensor.from_np(q).eval()
+
+    device.transpose(q_out, q_t, axes=new_shape)
+
+    q_np = q_out.to('cpu').data
+    q_np.shape = q_out.shape
+
+    np.testing.assert_allclose(q_np, np.transpose(q, axes=new_shape), atol=1e-2, rtol=1e-2)
     
 if __name__ == "__main__":
     B, T, OC, NH = 1, 2, 2, 2
@@ -73,3 +89,4 @@ if __name__ == "__main__":
     test_softmax_v_cp()
     test_softmax(None, None)
     test_transpose_2d()
+    test_transpose_3d()

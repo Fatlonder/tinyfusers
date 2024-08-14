@@ -32,10 +32,10 @@ class Nvrtc:
         status = self.dll.nvrtcGetCUBIN(prog, data)
         return status
 
-    def nvrtcGetPTXSize(self, prog):
+    def nvrtcGetPTXSize(self, prog, data_size):
         self.dll.nvrtcGetPTXSize.restype = ctypes.c_uint32
         self.dll.nvrtcGetPTXSize.argtypes = [nvrtcProgram, ctypes.POINTER(ctypes.c_uint64)]
-        status = self.dll.nvrtcGetPTXSize(prog)
+        status = self.dll.nvrtcGetPTXSize(prog, data_size)
         return status
 
     def nvrtcGetPTX(self, prog, data):

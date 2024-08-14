@@ -60,8 +60,8 @@ class Device:
             if status != 0:
                 raise RuntimeError(f"nvrtcGetCUBIN failed with status {status}")
         else:
-            dataSize = nvrtc.nvrtcGetPTXSize(prog)
-            data = b' ' * dataSize
+            nvrtc.nvrtcGetPTXSize(prog, (dataSize := ctypes.c_ulong()))
+            data = b' ' * dataSize.value
             status = nvrtc.nvrtcGetPTX(prog, data)
             if status != 0:
                 raise RuntimeError(f"nvrtcGetPTX failed with status {status}")
@@ -113,8 +113,9 @@ class Device:
         
         block_x, block_y, block_z = 8, 1, 1
         grid_x, grid_y, grid_z = math.ceil(B * T * NH * OC/ float(block_x)), 1, 1
-        kernelArgs = [ctypes.addressof(x_ptr), ctypes.cast(ctypes.pointer(ctypes.c_float(scaler)), ctypes.c_void_p),
-              ctypes.cast(ctypes.pointer(ctypes.c_uint32(B * T * NH * OC)), ctypes.c_void_p)]
+        kernelArgs = [ctypes.addressof(x_ptr), 
+                        ctypes.cast(ctypes.pointer(ctypes.c_float(scaler)), ctypes.c_void_p),
+                        ctypes.cast(ctypes.pointer(ctypes.c_uint32(B * T * NH * OC)), ctypes.c_void_p)]
         c_args = (ctypes.c_void_p * len(kernelArgs))(*kernelArgs)
         status = cuda.cuLaunchKernel(scale_tensor_fnc, grid_x, grid_y, grid_z,    # grid dim
                                             block_x, block_y, block_z,            # block dim
@@ -155,8 +156,11 @@ class Device:
         
         return out_tensor
     
-    def transpose(self, in_tensor, out_tensor):
-        w, h = out_tensor.shape
+    def transpose(self, out_tensor, in_tensor, axes:tuple):
+        shape = out_tensor.shape
+        i, j, k = axes if len(axes) == 3 else (axes[0], axes[1], -1)
+        shape = [shape[0], shape[1], shape[2]] if k != -1 else [shape[0], shape[1], -1] 
+
         if "s_transpose" in self.func_lib:
             s_transpose_tensor_fnc = self.func_lib["s_transpose"]
         else:
@@ -166,20 +170,26 @@ class Device:
             s_transpose_tensor_fnc = self.load_func(read_file_content(cuda_kernel_file), "s_transpose")
             self.func_lib["s_transpose"] = s_transpose_tensor_fnc
         
-        tile_dim = 4
-        block_x, block_y, block_z = tile_dim, tile_dim, 1
-        grid_x, grid_y, grid_z = math.ceil((w)/block_x), math.ceil((h)/block_y), 1
+        tile_dim = 8
+        block_x, block_y, block_z = tile_dim, tile_dim, tile_dim
+        grid_x, grid_y, grid_z = math.ceil((shape[0])/block_x), math.ceil((shape[1])/block_y), math.ceil((shape[2])/block_z if k!=-1 else 1)
         shared_mem_size = tile_dim * tile_dim 
-        kernelArgs = [ctypes.addressof(in_tensor.dt_ptr), ctypes.addressof(out_tensor.dt_ptr), 
-                    ctypes.cast(ctypes.pointer(ctypes.c_uint32(w)), ctypes.c_void_p),
-                    ctypes.cast(ctypes.pointer(ctypes.c_uint32(h)), ctypes.c_void_p)]            
+        kernelArgs = [ctypes.addressof(out_tensor.dt_ptr), 
+                      ctypes.addressof(in_tensor.dt_ptr), 
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(shape[0])), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(shape[1])), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(shape[2])), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(i)), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(j)), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(k)), ctypes.c_void_p)]            
         c_args = (ctypes.c_void_p * len(kernelArgs))(*kernelArgs)
 
         status = cuda.cuLaunchKernel(s_transpose_tensor_fnc, grid_x, grid_y, grid_z,                # grid dim
                                             block_x, block_y, block_z,                          # block dim
-                                            shared_mem_size, stream := cuda.CUstream(),         # shared mem and stream
+                                            0, stream := cuda.CUstream(),         # shared mem and stream
                                             c_args, None)
         if status != 0:
             raise RuntimeError(f"cuLaunchKernel failed with status {status}")
         
+        out_tensor.shape = (shape[i], shape[j], shape[k]) if k != -1 else (shape[i], shape[j])
         return out_tensor
