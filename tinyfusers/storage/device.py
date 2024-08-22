@@ -193,3 +193,41 @@ class Device:
         
         out_tensor.shape = (shape[i], shape[j], shape[k]) if k != -1 else (shape[i], shape[j])
         return out_tensor
+    
+    def transpose4d(self, out_tensor, in_tensor, axes:tuple):
+        shape = out_tensor.shape
+        i, j, k, l  = axes
+        if "transpose" in self.func_lib:
+            s_transpose_tensor_fnc = self.func_lib["transpose"]
+        else:
+            cuda_kernel_file = os.path.join(self.cuda_kernel_dir, 'transpose4d.cu')
+            def read_file_content(code_filename):
+                with open(code_filename, 'r') as f: return f.read()
+            s_transpose_tensor_fnc = self.load_func(read_file_content(cuda_kernel_file), "transpose")
+            self.func_lib["transpose"] = s_transpose_tensor_fnc
+        
+        tile_dim = 8
+        block_x, block_y, block_z = tile_dim, tile_dim, 1
+        grid_x, grid_y, grid_z = math.ceil((shape[0] * shape[1]) + tile_dim /block_x), math.ceil((shape[2] * shape[3]) + tile_dim/block_y),  1
+        shared_mem_size = tile_dim * tile_dim 
+        kernelArgs = [ctypes.addressof(out_tensor.dt_ptr), 
+                      ctypes.addressof(in_tensor.dt_ptr), 
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(shape[0])), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(shape[1])), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(shape[2])), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(shape[3])), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(i)), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(j)), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(k)), ctypes.c_void_p),
+                      ctypes.cast(ctypes.pointer(ctypes.c_int(l)), ctypes.c_void_p)]            
+        c_args = (ctypes.c_void_p * len(kernelArgs))(*kernelArgs)
+
+        status = cuda.cuLaunchKernel(s_transpose_tensor_fnc, grid_x, grid_y, grid_z,                # grid dim
+                                            block_x, block_y, block_z,                          # block dim
+                                            0, stream := cuda.CUstream(),         # shared mem and stream
+                                            c_args, None)
+        if status != 0:
+            raise RuntimeError(f"cuLaunchKernel failed with status {status}")
+        
+        out_tensor.shape = (shape[i], shape[j], shape[j], shape[l])
+        return out_tensor
