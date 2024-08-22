@@ -1,5 +1,6 @@
 import cupy as cp
 import os
+import math
 import numpy as np
 from tinyfusers import Tensor
 from tinyfusers.storage.device import Device
@@ -80,6 +81,23 @@ def test_transpose_3d():
     q_np.shape = q_out.shape
 
     np.testing.assert_allclose(q_np, np.transpose(q, axes=new_shape), atol=1e-2, rtol=1e-2)
+
+
+def test_transpose_4d():
+    device = Device("cuda")
+
+    shape = (70, 13, 13, 7)
+    new_shape = (1, 2, 0, 3)
+
+    q = np.random.randint(low=0, high=20, size=shape).astype(np.float32)
+    q = np.arange(math.prod(shape)).reshape(shape).astype(np.float32)
+    q_npt = np.transpose(q, axes=new_shape)
+    q_out = Tensor.zeros(shape=shape, dtype=np.float32).eval()
+    q_t = Tensor.from_np(q).eval()
+    device.transpose4d(q_out, q_t, axes=new_shape)
+    q_np = q_out.to('cpu').data
+    q_np.shape = (shape[new_shape[0]], shape[new_shape[1]], shape[new_shape[2]], shape[new_shape[3]])
+    np.testing.assert_allclose(q_np, q_npt, atol=1e-2, rtol=1e-2)
     
 if __name__ == "__main__":
     B, T, OC, NH = 1, 2, 2, 2
@@ -90,3 +108,4 @@ if __name__ == "__main__":
     test_softmax(None, None)
     test_transpose_2d()
     test_transpose_3d()
+    test_transpose_4d()

@@ -229,5 +229,5 @@ class Device:
         if status != 0:
             raise RuntimeError(f"cuLaunchKernel failed with status {status}")
         
-        out_tensor.shape = (shape[i], shape[j], shape[j], shape[l])
+        out_tensor.shape = (shape[i], shape[j], shape[k], shape[l])
         return out_tensor
